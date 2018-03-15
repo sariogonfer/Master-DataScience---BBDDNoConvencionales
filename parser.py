@@ -44,19 +44,33 @@ def fast_iter(context, func,*args, **kwargs):
     del context
     #clear chunks
 
-def fast_iter2(context, fout):
+def fast_iter2(context):
     collaborations = [u'www', u'phdthesis', u'inproceedings', u'incollection', u'proceedings', u'book', u'mastersthesis', u'article']
     #xml categories
     article_array = {}
     title = ''
 
+    counter = 0
+    counter_file = 0
+    fout = open('parsed_data_' + str(counter_file) + '.txt', 'w')
+	
+
     #read chunk line by line
     #we focus author and title
     for event, elem in context:
         if elem.tag == 'article':
-            #print(article_array)
-            fout.write(str(article_array))
+            print(article_array)
+            fout.write(str(article_array) + '\n')
             del article_array
+               
+            counter += 1
+            
+            if (counter >= 100000):
+                fout.close()
+                counter = 0
+                counter_file += 1
+                fout = open('parsed_data_' + str(counter_file) + '.txt', 'w')
+            
             article_array = {}
             article_array['key'] = elem.attrib['key']
             article_array['mdate'] = elem.attrib['mdate']
@@ -66,10 +80,12 @@ def fast_iter2(context, fout):
         elem.clear()
         while elem.getprevious() is not None:
             del elem.getparent()[0]
+            
         
     del context
     
     fout.write(str(article_array))
+    fout.close()
 
     #clear chunks
 
@@ -83,9 +99,8 @@ def fast_iter2(context, fout):
 #	print >>fout, elem
 
 if __name__ == "__main__":
-	fout = open('parsed_data.txt', 'w')
 	context = etree.iterparse('dblp.xml', load_dtd=True,html=True)
 	#To use iterparse, we don't need to read all of xml.
-	fast_iter2(context, fout)
+	fast_iter2(context)
 	
 	
