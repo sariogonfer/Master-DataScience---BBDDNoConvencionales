@@ -1,0 +1,41 @@
+# Para eliminar el _VALUE de algunos campos de tipo array como
+# title y author
+
+db.articles.aggregate([{$addFields: {author: '$author._VALUE', title: '$title._VALUE'}}, {$out: "articles"}])
+db.incollections.aggregate([{$addFields: {author: '$author._VALUE'}}, {$out: "incollections"}])
+
+# Para crear la colección de autores
+
+db.incollections.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", incollections: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"incollections": obj.incollections}}, {upsert: true})})
+
+db.articles.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", articles: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"articles": obj.articles}}, {upsert: true})})
+
+db.inproceedings.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", inproceedings: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"inproceesdings": obj.inproceedings}}, {upsert: true})})
+
+# Listado de obras de un autor
+
+db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publication: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceesdings.title"]}}}] )
+
+
+# Número de publicaciones de un autor
+
+db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publications: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceesdings.title"]}}}, {$project: {number_of_publications: {$size: "$publications"}}}] )
+
+
+# Número de articulos en 2017
+
+db.articles.find({year: 2017}).count()
+
+- Sin índice: 550 ms
+- Con índice: 109 ms
+
+(capturas Compass)
+
+# Número de autores ocasionales
+
+db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles", "$inproceesdings"]}, 5]}}).count()
+
+# Numero de bla bla bla de los 10 autores más bla bla bla
+
+
+
