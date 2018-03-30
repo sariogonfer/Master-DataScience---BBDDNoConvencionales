@@ -1,41 +1,210 @@
-# Para eliminar el _VALUE de algunos campos de tipo array como
-# title y author
+# Para eliminar el _VALUE de algunos campos de tipo array como 
+# title y author 
+ 
+db.articles.aggregate([{$addFields: {author: '$author._VALUE', title: '$title._VALUE', ee: '$ee._VALUE'}}, {$out: "articles"}]) 
+db.incollections.aggregate([{$addFields: {author: '$author._VALUE', ee: '$ee._VALUE'}}, {$out: "incollections"}]) 
 
-db.articles.aggregate([{$addFields: {author: '$author._VALUE', title: '$title._VALUE'}}, {$out: "articles"}])
-db.incollections.aggregate([{$addFields: {author: '$author._VALUE'}}, {$out: "incollections"}])
+#Para modificar el tipo de dato del campo year
+db.inproceedings.find().forEach(function(obj){
+    db.inproceedings.update(
+        {"_id": obj._id, 'year': {$exists : true}},
+        {$set: {"year": NumberInt(obj.year)}})
+    })
 
-# Para crear la colección de autores
 
+# Para crear la colección de autores 
 db.incollections.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", incollections: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"incollections": obj.incollections}}, {upsert: true})})
-
+ 
 db.articles.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", articles: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"articles": obj.articles}}, {upsert: true})})
 
-db.inproceedings.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", inproceedings: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"inproceesdings": obj.inproceedings}}, {upsert: true})})
+db.inproceedings.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", inproceedings: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){
+    db.authors.update(
+        {_id: obj._id},
+        {$set: {"inproceedings": obj.inproceedings}},
+        {upsert: true})
+    })
 
-# Listado de obras de un autor
+# 1. Listado de todas las publicaciones de un autor determinado.
 
-db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publication: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceesdings.title"]}}}] )
+db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publication: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceedings.title"]}}}] ) 
+ 
+ 
+# 2. Número de publicaciones de un autor determinado
+ 
+db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publications: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceedings.title"]}}}, {$project: {number_of_publications: {$size: "$publications"}}}] ) 
+ 
+ 
+# 3. Número de artículos en revista para el año 2017.
+ 
+db.articles.find({year: 2017}).count() 
+ 
+- Sin índice: 550 ms 
+- Con índice: 109 ms 
+ 
+(capturas Compass) 
+ 
+# 4. Número de autores ocasionales, es decir, que tengan menos de 5 publicaciones en total. 
+ 
+db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles", "$inproceedings"]}, 5]}}).count() 
+
+ 
+# 5. Número de artículos de revista (article) y número de artículos en congresos (inproceedings) de los diez autores con más publicaciones totales.
 
 
-# Número de publicaciones de un autor
+db.authors.aggregate(
+    [    
+        {$project: {
+            "total_incollections": {$size: {$ifNull: ['$incollections', []]},},
+            "total_inproceedings": {$size: {$ifNull: ['$inproceedings', []]},},
+            "total_articles": {$size: {$ifNull: ['$articles', []]},}
+        }},
+        {$addFields: {
+            "total_publications": { $add: [ "$total_incollections", "$total_inproceedings", "$total_articles" ] }
+        }},
+        {$sort : { total_publications : -1 } },
+        {$limit : 10},
+        {$project: {
+            "_id": 1,
+            "total_articles": 1,
+            "total_inproceedings": 1
+        }}
+    ],
+    { allowDiskUse: true }
+    )
 
-db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publications: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceesdings.title"]}}}, {$project: {number_of_publications: {$size: "$publications"}}}] )
 
 
-# Número de articulos en 2017
+# 6. Número medio de autores de todas las publicaciones que tenga en su conjunto de datos.
 
-db.articles.find({year: 2017}).count()
+######################################################################################### OJO REVISAR #########################################################################################
 
-- Sin índice: 550 ms
-- Con índice: 109 ms
+db.articles.aggregate(
+   [
+      {
+        $project : {
+           num_authors: { $size: {$ifNull: ['$author', []]}}
+        }
+      },
+      { $match: { num_authors: { $gt: 0} } },
+      {
+        $group : {
+           _id : null,
+           num_authors: { $sum: "$num_authors" },
+           count: { $sum: 1 }
+        }
+      },
+      {
+        $project : {
+           _id: 0,
+           articles : { num_authors: "$num_authors", count: "$count"},
+        }
+      },
+      {$out: "collection2"}
+   ]
+)
+      
+db.incollections.aggregate(
+   [
+      {
+        $project : {
+           num_authors: { $size: {$ifNull: ['$author', []]}}
+        }
+      },
+      { $match: { num_authors: { $gt: 0} } },
+      {
+        $group : {
+           _id : null,
+           num_authors: { $sum: "$num_authors" },
+           count: { $sum: 1 }
+        }
+      },
+      {
+        $project : {
+           _id: 0,
+           incollections : { num_authors: "$num_authors", count: "$count"},
+        }
+      },
+      {$out: "collection2"}
+   ]
+)
 
-(capturas Compass)
+db.inproceedings.aggregate(
+   [
+      {
+        $group : {
+           _id : null,
+           num_authors: { $sum: 1 },
+           count: { $sum: 1 }
+        }
+      },
+      {
+        $project : {
+           _id: 0,
+           inproceedings : { num_authors: "$num_authors", count: "$count"},
+        }
+      },
+      {$out: "collection2"}
+   ]
+)
 
-# Número de autores ocasionales
 
-db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles", "$inproceesdings"]}, 5]}}).count()
 
-# Numero de bla bla bla de los 10 autores más bla bla bla
+
+# 7. Listado de coautores de un autor (Se denomina coautor a cualquier persona que haya firmado una publicación).
+
+# 8. Edad de los 5 autores con un periodo de publicaciones más largo (Se considera la Edad de un autor al número de años transcurridos desde la fecha de su primera publicación hasta la última registrada).
+
+db.authors.aggregate(
+    [    
+        {$project: {
+            publication: {$concatArrays: [
+                {$ifNull: ['$incollections', []]},
+                {$ifNull: ['$inproceedings', []]},
+                {$ifNull: ['$articles', []]}]}
+        }},
+        {$addFields: {
+            max_publication: { $max: "$publication.year"},
+            min_publication: { $min: "$publication.year"}
+        }},
+        {$addFields: {
+            "age": { $subtract: [ "$max_publication", "$min_publication"] }
+        }},
+        {$sort : { age : -1 } },
+        {$limit : 5},
+        {$project: {
+            _id: 1,
+            age: 1
+        }}
+    ],
+    { allowDiskUse: true }
+    )
+
+# 9. Número de autores novatos, es decir, que tengan una Edad menor de 5 años. Se considera la Edad de un autor al número de años transcurridos desde la fecha de su primera publicación hasta la última registrada.
+
+
+db.authors.aggregate(
+    [    
+        {$project: {
+            publication: {$concatArrays: [
+                {$ifNull: ['$incollections', []]},
+                {$ifNull: ['$inproceedings', []]},
+                {$ifNull: ['$articles', []]}]}
+        }},
+        {$addFields: {
+            max_publication: { $max: "$publication.year"},
+            min_publication: { $min: "$publication.year"}
+        }},
+        {$addFields: {
+            "age": { $subtract: [ "$max_publication", "$min_publication"] }
+        }},        
+        {'$match':{'age': {'$lt': 5}}}
+    ],
+    { allowDiskUse: true }
+    ).itcount()				
+
+# 10. Porcentaje de publicaciones en revistas con respecto al total de publicaciones
+
+db.articles.find().count()*100/(db.articles.find().count() + db.incollections.find().count() + db.inproceedings.find().count())
 
 
 
