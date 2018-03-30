@@ -76,8 +76,6 @@ db.authors.aggregate(
 
 # 6. Número medio de autores de todas las publicaciones que tenga en su conjunto de datos.
 
-######################################################################################### OJO REVISAR #########################################################################################
-
 db.articles.aggregate(
    [
       {
@@ -98,10 +96,9 @@ db.articles.aggregate(
            _id: 0,
            articles : { num_authors: "$num_authors", count: "$count"},
         }
-      },
-      {$out: "collection2"}
+      }
    ]
-)
+).forEach(function(obj){db.avg_publications.update({}, {$set: {"articles": obj.articles}}, {upsert: true})})
       
 db.incollections.aggregate(
    [
@@ -123,10 +120,9 @@ db.incollections.aggregate(
            _id: 0,
            incollections : { num_authors: "$num_authors", count: "$count"},
         }
-      },
-      {$out: "collection2"}
+      }
    ]
-)
+).forEach(function(obj){db.avg_publications.update({}, {$set: {"incollections": obj.incollections}}, {upsert: true})})
 
 db.inproceedings.aggregate(
    [
@@ -142,15 +138,40 @@ db.inproceedings.aggregate(
            _id: 0,
            inproceedings : { num_authors: "$num_authors", count: "$count"},
         }
-      },
-      {$out: "collection2"}
+      }
    ]
-)
+).forEach(function(obj){db.avg_publications.update({}, {$set: {"inproceedings": obj.inproceedings}}, {upsert: true})})
 
 
+db.avg_publications.aggregate([
+    {
+        $project : {
+            _id: 0,
+            articles: 1,
+            incollections: 1,
+            inproceedings: 1,
+            articles_avg : {$divide: ["$articles.num_authors", "$articles.count"]},
+            incollections_avg : {$divide: ["$incollections.num_authors", "$incollections.count"]},
+            inproceedings_avg : {$divide: ["$inproceedings.num_authors", "$inproceedings.count"]}
+        }
+    },
+    {
+        $project : {
+            articles_avg: 1,
+            incollections_avg: 1,
+            inproceedings_avg: 1,
+            total_avg : {$divide: [
+                {$sum: ["$articles.num_authors", "$incollections.num_authors", "$inproceedings.num_authors"]},
+                {$sum: ["$articles.count", "$incollections.count", "$inproceedings.count"]}
+            ]}
+        }
+    }
+])
 
 
 # 7. Listado de coautores de un autor (Se denomina coautor a cualquier persona que haya firmado una publicación).
+
+
 
 # 8. Edad de los 5 autores con un periodo de publicaciones más largo (Se considera la Edad de un autor al número de años transcurridos desde la fecha de su primera publicación hasta la última registrada).
 
