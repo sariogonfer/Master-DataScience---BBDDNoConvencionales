@@ -1,8 +1,8 @@
-# Para eliminar el _VALUE de algunos campos de tipo array como 
-# title y author 
- 
-db.articles.aggregate([{$addFields: {author: '$author._VALUE', title: '$title._VALUE', ee: '$ee._VALUE'}}, {$out: "articles"}]) 
-db.incollections.aggregate([{$addFields: {author: '$author._VALUE', ee: '$ee._VALUE'}}, {$out: "incollections"}]) 
+# Para eliminar el _VALUE de algunos campos de tipo array como
+# title y author
+
+db.articles.aggregate([{$addFields: {author: '$author._VALUE', title: '$title._VALUE', ee: '$ee._VALUE'}}, {$out: "articles"}])
+db.incollections.aggregate([{$addFields: {author: '$author._VALUE', ee: '$ee._VALUE'}}, {$out: "incollections"}])
 
 #Para modificar el tipo de dato del campo year
 db.inproceedings.find().forEach(function(obj){
@@ -12,9 +12,9 @@ db.inproceedings.find().forEach(function(obj){
     })
 
 
-# Para crear la colección de autores 
+# Para crear la colección de autores
 db.incollections.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", incollections: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"incollections": obj.incollections}}, {upsert: true})})
- 
+
 db.articles.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", articles: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"articles": obj.articles}}, {upsert: true})})
 
 db.inproceedings.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", inproceedings: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}], { allowDiskUse: true }).forEach(function(obj){
@@ -26,33 +26,33 @@ db.inproceedings.aggregate([{$unwind: "$author"}, {$group: { _id: "$author", inp
 
 # 1. Listado de todas las publicaciones de un autor determinado.
 
-db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publication: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceedings.title"]}}}] ) 
- 
- 
-# 2. Número de publicaciones de un autor determinado
- 
-db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publications: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceedings.title"]}}}, {$project: {number_of_publications: {$size: "$publications"}}}] ) 
- 
- 
-# 3. Número de artículos en revista para el año 2017.
- 
-db.articles.find({year: 2017}).count() 
- 
-- Sin índice: 550 ms 
-- Con índice: 109 ms 
- 
-(capturas Compass) 
- 
-# 4. Número de autores ocasionales, es decir, que tengan menos de 5 publicaciones en total. 
- 
-db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles", "$inproceedings"]}, 5]}}).count() 
+db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publication: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceedings.title"]}}}] )
 
- 
+
+# 2. Número de publicaciones de un autor determinado
+
+db.authors.aggregate([ { $match : { _id : "Chin-Wang Tao" } }, { $project: {publications: {$concatArrays: ["$incollections.title", "$articles.title", "$inproceedings.title"]}}}, {$project: {number_of_publications: {$size: "$publications"}}}] )
+
+
+# 3. Número de artículos en revista para el año 2017.
+
+db.articles.find({year: 2017}).count()
+
+- Sin índice: 550 ms
+- Con índice: 109 ms
+
+(capturas Compass)
+
+# 4. Número de autores ocasionales, es decir, que tengan menos de 5 publicaciones en total.
+
+db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles", "$inproceedings"]}, 5]}}).count()
+
+
 # 5. Número de artículos de revista (article) y número de artículos en congresos (inproceedings) de los diez autores con más publicaciones totales.
 
 
 db.authors.aggregate(
-    [    
+    [
         {$project: {
             "total_incollections": {$size: {$ifNull: ['$incollections', []]},},
             "total_inproceedings": {$size: {$ifNull: ['$inproceedings', []]},},
@@ -99,7 +99,7 @@ db.articles.aggregate(
       }
    ]
 ).forEach(function(obj){db.avg_publications.update({}, {$set: {"articles": obj.articles}}, {upsert: true})})
-      
+
 db.incollections.aggregate(
    [
       {
@@ -169,14 +169,33 @@ db.avg_publications.aggregate([
 ])
 
 
+ALTERNATIVA (el de inproceedings no es array, seguro que hay una forma para hacerla mas generica, pero bueno):
+
+(db.articles.aggregate([{$match: {author : {$exists: true}}}, {$project: {num_authors: { $size: '$author' }}}, {$group: {_id: '', num_authors: {$sum: '$num_authors'}}}, {$project: {_id: 0, 'num_authors': '$num_authors'}}]).next()['num_authors'] +
+db.incollections.aggregate([{$match: {author : {$exists: true}}}, {$project: {num_authors: { $size: '$author' }}}, {$group: {_id: '', num_authors: {$sum: '$num_authors'}}}, {$project: {_id: 0, 'num_authors': '$num_authors'}}]).next()['num_authors'] +
+db.inproceedings.find({author : {$exists: true}}).count())/(db.articles.find().count() + db.incollections.find().count() + db.inproceedings.find().count())
+
+
+
+
+
+
 # 7. Listado de coautores de un autor (Se denomina coautor a cualquier persona que haya firmado una publicación).
+
+La query see va de madre aquí, o no se me ocurre una buena, por qeu el $lookup no puedes hacerlo a la vez contra varios parece. mejor meter la info todo junto. Los autores de un libro se mantinen siempre fijos, por tanto las operaciones de actulización son 0 (excepto que sea Cifuentes la autora).
+
+db.incollections.aggregate([{$addFields: {"authorArray": "$author"}}, {$unwind: "$author"}, {$group: { _id: "$author", incollections: {$push: {_id: "$_id", title: "$title", year: "$year", author: "$authorArray"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"incollections": obj.incollections}}, {upsert: true})})
+
+db.articles.aggregate([{$addFields: {"authorArray": "$author"}}, {$unwind: "$author"}, {$group: { _id: "$author", articles: {$push: {_id: "$_id", title: "$title", year: "$year", author: "$authorArray"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"articles": obj.articles}}, {upsert: true})})
+
+db.inproceedings.aggregate([{$addFields: {"authorArray": "$author"}}, {$unwind: "$author"}, {$group: { _id: "$author", inproceedings: {$push: {_id: "$_id", title: "$title", year: "$year", author: "$authorArray"}}}}], { allowDiskUse: true }).forEach(function(obj){ db.authors.update({_id: obj._id}, {$set: {"inproceedings": obj.inproceedings}}, {upsert: true})})
 
 
 
 # 8. Edad de los 5 autores con un periodo de publicaciones más largo (Se considera la Edad de un autor al número de años transcurridos desde la fecha de su primera publicación hasta la última registrada).
 
 db.authors.aggregate(
-    [    
+    [
         {$project: {
             publication: {$concatArrays: [
                 {$ifNull: ['$incollections', []]},
@@ -204,7 +223,7 @@ db.authors.aggregate(
 
 
 db.authors.aggregate(
-    [    
+    [
         {$project: {
             publication: {$concatArrays: [
                 {$ifNull: ['$incollections', []]},
@@ -217,11 +236,11 @@ db.authors.aggregate(
         }},
         {$addFields: {
             "age": { $subtract: [ "$max_publication", "$min_publication"] }
-        }},        
+        }},
         {'$match':{'age': {'$lt': 5}}}
     ],
     { allowDiskUse: true }
-    ).itcount()				
+    ).itcount()
 
 # 10. Porcentaje de publicaciones en revistas con respecto al total de publicaciones
 
