@@ -182,14 +182,63 @@ db.inproceedings.find({author : {$exists: true}}).count())/(db.articles.find().c
 
 # 7. Listado de coautores de un autor (Se denomina coautor a cualquier persona que haya firmado una publicación).
 
-La query see va de madre aquí, o no se me ocurre una buena, por qeu el $lookup no puedes hacerlo a la vez contra varios parece. mejor meter la info todo junto. Los autores de un libro se mantinen siempre fijos, por tanto las operaciones de actulización son 0 (excepto que sea Cifuentes la autora).
-
-db.incollections.aggregate([{$addFields: {"authorArray": "$author"}}, {$unwind: "$author"}, {$group: { _id: "$author", incollections: {$push: {_id: "$_id", title: "$title", year: "$year", author: "$authorArray"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"incollections": obj.incollections}}, {upsert: true})})
-
-db.articles.aggregate([{$addFields: {"authorArray": "$author"}}, {$unwind: "$author"}, {$group: { _id: "$author", articles: {$push: {_id: "$_id", title: "$title", year: "$year", author: "$authorArray"}}}}], { allowDiskUse: true }).forEach(function(obj){db.authors.update({_id: obj._id}, {$set: {"articles": obj.articles}}, {upsert: true})})
-
-db.inproceedings.aggregate([{$addFields: {"authorArray": "$author"}}, {$unwind: "$author"}, {$group: { _id: "$author", inproceedings: {$push: {_id: "$_id", title: "$title", year: "$year", author: "$authorArray"}}}}], { allowDiskUse: true }).forEach(function(obj){ db.authors.update({_id: obj._id}, {$set: {"inproceedings": obj.inproceedings}}, {upsert: true})})
-
+db.authors.aggregate([
+    { $match : { _id : "Chin-Wang Tao" } },
+    {
+       $lookup:
+         {
+           from: "articles",
+           localField: "articles._id",
+           foreignField: "_id",
+           as: "articles_detail"
+         }
+    },
+    {
+       $lookup:
+         {
+           from: "incollections",
+           localField: "incollections._id",
+           foreignField: "_id",
+           as: "incollections_detail"
+         }
+    },
+    {   
+        $project:{
+            _id : 1,
+            authors_detail : { $concatArrays: [ "$articles_detail", "$incollections_detail" ] }
+        } 
+    },
+    {
+        $project: {
+            "_id": 0,
+            "results": {
+                $reduce: {
+                    input: "$authors_detail.author",
+                    initialValue: [],
+                    in: { $concatArrays : ["$$value", "$$this"] }
+                }
+            }
+        }
+    },
+    { $unwind : "$results" },
+    {
+        $group: {
+            _id: "$results",
+        }
+    },
+    {
+        $group: {
+            _id: null,
+            coauthors: { $push:  { _id: "$_id"} }
+        }
+    },
+    {
+        $project: {
+            _id: 0,
+            "coauthors": "$coauthors._id"
+        }
+    }
+])
 
 
 # 8. Edad de los 5 autores con un periodo de publicaciones más largo (Se considera la Edad de un autor al número de años transcurridos desde la fecha de su primera publicación hasta la última registrada).
