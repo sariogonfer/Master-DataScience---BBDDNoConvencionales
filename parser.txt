@@ -1,0 +1,24 @@
+Para leer el XML abrimos una shell de pyspark con el paquete de java spark-xml:
+
+pyspark --packages com.databricks:spark-xml_2.11:0.4.1
+
+Desde pyspark ejutamos para cada tipo de publicación el siguiente mandato:
+
+df = spark.read.format('com.databricks.spark.xml').option("rowTag", "incollection").load('./dblp.xml')
+
+Al no definiri el esquema, intenta "adivinarlo" por si mimso. Esto causa problemas al intentar
+parsear algunos campos. Por ello lo mejor es definir nuestro propio esquema definiendo todos los campos
+como strings. Ya que solo utilizamos este dataframe para transformar el xml a JSON, con el tipo string
+nos es suficiente. Para hacerlo más automático, creamos el esquema apartir del df ya leido.
+
+from pyspark.sql.types import StructField, StringType, StructType
+
+custom_types = []
+for c in df.columns[1:]:
+    custom_types.append(StructField(str(c), StringType(), nullable=True))
+
+custom_schema = StructType(custom_types)
+
+Por último para escribir el json:
+
+df.write.json('./incollection')
