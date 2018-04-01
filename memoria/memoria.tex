@@ -1,0 +1,197 @@
+\documentclass[spanish]{article}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{shadow}
+\usepackage{indentfirst}
+\usepackage{fancyhdr}
+%\linespread{1.25}
+\usepackage{graphicx}
+\usepackage{pdfpages}
+\usepackage{subfigure}
+\usepackage{framed}
+\usepackage{array}
+\usepackage{appendix}
+\usepackage[bookmarks=true,bookmarksopen,hidelinks,bookmarksdepth=3,colorlinks=false]{hyperref}
+\usepackage{graphics}
+\usepackage{anysize}
+\usepackage{theorem}
+\usepackage{float}
+%\marginsize{4cm}{2cm}{2cm}{2cm}
+\usepackage[Glenn]{fncychap}
+\usepackage{url}
+\usepackage{multicol}
+\usepackage{awesomebox}
+\pagestyle{fancy}
+\usepackage{titling}
+\usepackage{lastpage}
+\usepackage{lipsum}  
+\usepackage{fancyhdr}
+\usepackage{extramarks}
+\usepackage{float}
+\usepackage{flowchart}
+\usetikzlibrary{arrows}
+\usepackage{etoolbox}
+\AtBeginEnvironment{tikzpicture}{\shorthandoff{>}\shorthandoff{<}}{}{}
+\usepackage[acronym,nonumberlist,shortcuts,sanitize=none,nomain]{glossaries}
+\makeglossaries
+\usepackage[xindy]{imakeidx}
+\makeindex
+\usepackage{color}
+\definecolor{gray97}{gray}{.97}
+\definecolor{gray75}{gray}{.75}
+\definecolor{gray45}{gray}{.45}
+\definecolor{javared}{rgb}{0.6,0,0}
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35}
+\definecolor{javapurple}{rgb}{0.5,0,0.35}
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75}
+\definecolor{OliveGreen}{rgb}{0,0.6,0}
+
+\usepackage{minted}
+\usemintedstyle{emacs}
+
+\input{Extra/Glossary.tex}
+
+\newcommand{\lsidequotesize}{40}
+\newcommand{\lsidequotecoeff}{0.325}
+\definecolor{quotemarkcolor}{rgb}{0.5,0.5,0.5}
+
+\reversemarginpar
+\usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
+
+\newcommand{\unsure}[1]{\todo[linecolor=red,backgroundcolor=red!25,bordercolor=red]{#1}}
+\newcommand{\change}[1]{\todo[linecolor=blue,backgroundcolor=blue!25,bordercolor=blue]{#1}}
+\newcommand{\info}[1]{\todo[linecolor=OliveGreen,backgroundcolor=OliveGreen!25,bordercolor=OliveGreen]{#1}}
+\newcommand{\improvement}[1]{\todo[linecolor=Plum,backgroundcolor=Plum!25,bordercolor=Plum]{#1}}
+
+
+\newcommand{\rulesep}{\unskip\ \vrule\ }
+
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup[figure]{labelfont=it,textfont={it}}
+\captionsetup[subfigure]{labelfont=bf,textfont=normalfont,singlelinecheck=off,justification=raggedright}
+
+\tolerance=1
+\emergencystretch=\maxdimen
+\hyphenpenalty=10000
+\hbadness=10000
+
+\usepackage[style=alphabetic]{biblatex}
+\addbibresource{Extra/Bibliografia.bib}
+
+
+\raggedbottom
+\begin{document}
+
+\DeclareGraphicsExtensions{.jpg,.pdf,.mps,.png,.gif,.fig,.bmp, .PNG}
+
+%===================================
+% Definición de campos.
+%===================================
+
+\title{Este es el título.}
+  
+\author{AUTOR 1, AUTOR 2}
+
+\newcommand{\asignatura}{Esta es la asignatura}
+
+
+%===================================
+% Acta
+%===================================
+%\thispagestyle{empty}
+%\includepdf[pages=1]{Acta/acta.pdf} %%% Ya que el acta tiene un formato específico, se crea un pdf a partir de un fichero de word y se incluye %%%
+%\newpage
+%\thispagestyle{empty}\cleardoublepage
+
+%===================================
+% Portada
+%===================================
+
+\input{Portada/Portada.tex}
+\maketitle
+
+
+\renewcommand\tablename{Tabla}
+\renewcommand\listfigurename{Lista de Figuras}
+\renewcommand\listtablename{Lista de Tablas}
+
+\thispagestyle{empty} \cleardoublepage
+
+
+%====================================
+%		Para el encabezado que se va a utilizar en todo el proyecto
+%====================================
+\pagestyle{fancy}
+
+\pagestyle{fancy}
+\fancyhead[LO,LE]{\asignatura}
+\fancyhead[RO,RE]{\includegraphics[width=0.5cm,height=0.5cm]{Portada/DSLab_logo_2.png}}
+\fancyfoot[LO,LE]{Máster en Data Science. URJC, 2018}
+\cfoot{}
+\fancyfoot[RE,RO]{Página\ \thepage\ de\ \protect\pageref{LastPage}}
+
+%====================================
+%Índices
+%====================================
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\tableofcontents
+\newpage
+\addcontentsline{toc}{section}{Lista de figuras}
+\listoffigures
+\newpage
+
+
+%============================================================
+%   Glosario
+%============================================================
+\renewcommand*{\acronymname}{Glosario}
+\renewcommand*{\glossaryname}{Glosario}
+\deftranslation{Glossary}{Glosario}
+\addcontentsline{toc}{section}{Glosario}
+\markboth{GLOSARIO}{GLOSARIO}
+\printglossaries
+
+
+%=============================================================
+%		Contenido
+%=============================================================
+
+\input{Sections/MongoDB/Introduccion}
+\input{Sections/MongoDB/Diseno}
+\input{Sections/MongoDB/Analisis}
+%\input{Sections/Neo4j/Introduccion}
+%\input{Sections/Neo4j/Diseno}
+%\input{Sections/Neo4j/Analisis}
+
+\input{Extra/Conclusiones}
+
+%------------------------------------------------------------
+%          Bibliografia
+%------------------------------------------------------------
+\cleardoublepage
+\addcontentsline{toc}{section}{Bibliografía}
+\printbibliography
+
+%============================================================
+%   Apéndices
+%============================================================
+\renewcommand{\appendixtocname}{ANEXOS}
+\renewcommand{\appendixpagename}{ANEXOS}
+\renewcommand{\appendixname}{ANEXOS}
+\appendix
+\appendixpage
+\addappheadtotoc
+\begin{appendices}
+\addtocontents{toc}{\protect\setcounter{tocdepth}{5}}
+\input{Sections/Appendices/Appendice}
+\end{appendices}
+
+\end{document}

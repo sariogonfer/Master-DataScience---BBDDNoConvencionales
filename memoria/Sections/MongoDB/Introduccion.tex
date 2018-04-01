@@ -1,0 +1,27 @@
+\section{MongoDB}
+
+La primera parte de la práctica estará enfocada en la \gls{BBDD} no ralacional MongoDB. Esta se trate de la \gls{BBDD} más importante actualmente. En el momento de escribir este texto, se encuentra en el 5to de \gls{BBDD} más utilizadas según la web \url{https://db-engines.com/en/ranking} y solo por detrás de las \gls{BBDD} relacionales.
+
+MongoDB tiene las siguientes características:
+
+\begin{itemize}
+ \item Es schemas less, es decir, no es preciso definir un esquema de datos. Aunque no por ello, tenemos que dejar de saber como son almacenados los datos.
+ \item Usa el formato BSON para almacenar los datos, haciendo que sea facil su uso desde lenguajes de programación como Python y JavaScript.
+ \item Permite realizar agregaciones. Incluye el framework aggregation el cuál le permite hacer operaciones realmente potentes.
+ \item Podemos crear índices (incluyendo índices parciales) de cualquiera de sus campos, lo que acelera notablemente las busquedas.
+ \item Su característica de \textit{sharding} le permite ser muy escalable.
+ \item Cuenta con una gran comunidad de desarrolladores detrás lo cual es una garantía de futuro.
+ \item y muchas más.
+\end{itemize}
+
+Para la realización de esta parte de la práctica vamos a partir de tres documentos \gls{JSON}, los cuales podemos ver la forma de obtenerlos en el anexo \ref{sec:parser}.
+
+Cada uno de estos documentos contiene la información sobre los tres tipos de publicaciones que vamos a usar:
+
+\begin{itemize}
+ \item Articles.
+ \item Inproceedings.
+ \item Incollections.
+\end{itemize}
+
+

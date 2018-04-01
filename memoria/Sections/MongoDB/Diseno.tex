@@ -1,0 +1,110 @@
+\subsection{Diseño}
+
+Aunque se dice que MongoDB se trata de una \gls{BBDD} \textit{Schemasless}, eso no quita de definir una correcta estructura para almacenar los datos la cual nos permita que las consultas que se hagan sean tanto más sencillas y más rápidas. También es importante el saber definir correctamente los índices que vamos a aplicar. En este sentido hay que tener en cuenta que el uso de índices aumenta el rendimiento de nuestras consultas de busqueda en la \gls{BBDD}, pero resulta perjudiciales a la hora de hacer inserciones, además de ocupar espacio en memoria.
+
+También es importante a la hora de definir la forma en la que se guardarán los datos el hecho de como gestionar las relaciones entre documentos. A grandes ragos, y sin entrar en muchos detalles, existen dos estrategias:
+
+\begin{itemize}
+ \item Utilizar referencias entre documentos. Es decir, que uno de los campos de un documento almacene un identificador que sirva para identificar unívocamente a otro documento. Esta relacion puede darse en ambos sentidos. La principal ventaja es el ahorro de espacio al no tener elementos duplicados, así como la facilidad de gestionar una posible actualización de los datos. Por contra, las queries de busqueda serán más complejas al tener que también hacer una busqueda por el identificador del segundo documento.
+ \item El segundo método consite en insertar el segundo documento dentro del primero como si de un campo más se tratase. Esto Facilita las queries de busqueda ya que recuperamos ambos documentos a la vez, pero tiene la pega de que muy probablemente dupliquemos datos lo cuál se traduce en una mayor cantidad de datos a almacenar y hace más complejo la actualización.
+\end{itemize}
+
+El hecho de optar por una u otra estrategia dependerá de las operaciones que vayamos a realizar sobre nuestra \gls{BBDD}. 
+
+Para el caso que nos ocupa, hemos decidido crear una colección por cada tipo de publicación que vamos a trabajar. También vamos a crear una cuarta colección dentro de la cual cada documento representará un autor. Además, cada uno de estos podocumentos almacenara una información mínima de las publicaciones de dicho autor con el fín de facilitar las queries futuras. Además, se considera que la información de un libro, y la relación de este con sus autores, no debería sufrir cambios (salvo casos excepcionales), por lo que el tener estos datos embebidos dentro de otros no supondrá un gran problema a la hora de gestionar las actualizaciones.
+
+La siguiente tabla muestra los datos de las colleciones con las que vamos a trabajar:
+
+\begin{center}
+  \begin{tabular}{ | l | l | l |}
+    \hline
+    Colección & Información  &  Indices \\ \hline
+    
+    Articles &
+    \begin{minipage}[t]{0.4\textwidth}
+      \begin{itemize}
+	\item \_id
+	\item authors: Array con los nombres de los autores.
+      \end{itemize}
+    \end{minipage} & 
+    \begin{minipage}[t]{0.3\textwidth}
+      \begin{itemize}
+	\item \_id
+      \end{itemize} 
+    \end{minipage}  \\ \hline
+    
+    Incollections &
+    \begin{minipage}[t]{0.4\textwidth}
+      \begin{itemize}
+	\item \_id
+	\item authors: Array con los nombres de los autores.
+      \end{itemize}
+    \end{minipage} & 
+    \begin{minipage}[t]{0.3\textwidth}
+      \begin{itemize}
+	\item \_id
+      \end{itemize}
+    \end{minipage}  \\ \hline
+    
+    Inproceedings &
+    \begin{minipage}[t]{0.4\textwidth}
+      \begin{itemize}
+	\item \_id
+	\item authors: Array con los nombres de los autores.
+      \end{itemize}
+    \end{minipage} & 
+    \begin{minipage}[t]{0.3\textwidth}
+      \begin{itemize}
+	\item \_id
+      \end{itemize} 
+    \end{minipage}  \\ \hline
+    
+    Authors &
+    \begin{minipage}[t]{0.4\textwidth}
+      \begin{itemize}
+	\item \_id
+	\item authors: Array con los nombres de los autores.
+      \end{itemize}
+    \end{minipage} & 
+    \begin{minipage}[t]{0.3\textwidth}
+      \begin{itemize}
+	\item \_id
+      \end{itemize} 
+    \end{minipage}  \\ \hline
+  \end{tabular}
+\end{center}
+
+\subsection{Carga de los datos.}
+
+Los datos han sido cargados usando la herramienta \textbf{mongoimport}. Esta herramienta se ejecuta desde la línea de comandos y se instala junto con el propio MongoDB. Hay que tener en cuenta que, en caso de no existir la base de datos o la colección donde se indica que se deben cargar los datos, es el propio MongoDB el encargado de crearlas.
+
+Para cargar nuestros datos se han ejecutado los siguientes comandos:
+
+\begin{minted}[]{bash}
+mongoimport --db=dblp --collection=articles articles/articles.json	
+mongoimport --db=dblp --collection=incollections incollections/incollections.json	
+mongoimport --db=dblp --collection=Inproceedings Inproceedings/Inproceedings.json	
+\end{minted}
+
+Al cargar los datos de esta forma, los \textit{array} de autores y de ee han sido cargados como \textit{arrays} de objetos, los cuales tienen un campo llamado \textbf{\_VALUE} que contiene la cadena de texto. Es por ello que aplicamos un preprocesamiento para convertir estos campos en \textit{arrays} formados por cadenas de texto. El código utilizado para ello:
+
+\begin{minted}[
+frame=lines]{js}
+db.articles.aggregate([{$addFields: {author: '$author._VALUE', title: '$title._VALUE',
+  ee: '$ee._VALUE'}}, {$out: "articles"}])
+
+db.incollections.aggregate([{$addFields: {author: '$author._VALUE', ee: '$ee._VALUE'}},
+  {$out: "incollections"}])
+\end{minted}
+
+En el caso de los \textit{inproceedings}, también necesitamos cambiar el tipo del campo año ya que no ha sido reconocido como númerico al realizar la carga.
+  
+\begin{minted}[
+frame=lines]{js}
+db.inproceedings.find().forEach(function(obj){
+  db.inproceedings.update(
+    {"_id": obj._id, 'year': {$exists : true}},
+    {$set: {"year": NumberInt(obj.year)}
+  })
+})
+\end{minted}
