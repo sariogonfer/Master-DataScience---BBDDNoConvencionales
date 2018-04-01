@@ -89,7 +89,7 @@ mongoimport --db=dblp --collection=Inproceedings Inproceedings/Inproceedings.jso
 Al cargar los datos de esta forma, los \textit{array} de autores y de ee han sido cargados como \textit{arrays} de objetos, los cuales tienen un campo llamado \textbf{\_VALUE} que contiene la cadena de texto. Es por ello que aplicamos un preprocesamiento para convertir estos campos en \textit{arrays} formados por cadenas de texto. El código utilizado para ello:
 
 \begin{minted}[
-frame=lines]{js}
+frame=single]{js}
 db.articles.aggregate([{$addFields: {author: '$author._VALUE', title: '$title._VALUE',
   ee: '$ee._VALUE'}}, {$out: "articles"}])
 
@@ -100,7 +100,7 @@ db.incollections.aggregate([{$addFields: {author: '$author._VALUE', ee: '$ee._VA
 En el caso de los \textit{inproceedings}, también necesitamos cambiar el tipo del campo año ya que no ha sido reconocido como númerico al realizar la carga.
   
 \begin{minted}[
-frame=lines]{js}
+frame=single]{js}
 db.inproceedings.find().forEach(function(obj){
   db.inproceedings.update(
     {"_id": obj._id, 'year': {$exists : true}},

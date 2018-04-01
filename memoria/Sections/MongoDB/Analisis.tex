@@ -2,6 +2,10 @@
 
 \subsection{Listado de todas las publicaciones de un autor determinado.}
 
+Para esta query vamos a hacer uso de la potencia que nos ofrece el \textit{aggregation framework}. Este framework funciona creando un pipeline en la que definiremos \textit{stages}. La salida de un \textit{stage} pasa a ser la entrada del \textit{stage} siguiente. Con esto podemos realizar sobre los datos operaciones realmente potentes.
+
+Para obtener el listado de las publicaciones, la query que debemos ejecutar es sencilla. En primer lugar filtramos por el nombre de autor que del cual queremos hacer la consulta, y a continuación concatenamos los \textit{arrays} con los títulos de las publicaciones.
+
 \begin{minted}[
 frame=single]{js}
 db.authors.aggregate([
@@ -13,6 +17,8 @@ db.authors.aggregate([
 \end{minted}
 
 \subsection{Número de publicaciones de un autor determinado.}
+
+Esta consula es similar a la anterior, pero debemos añadir un paso más en nuestro \textit{pipeline} en el cual contaremos el número de puclicaciones.
 
 \begin{minted}[
 frame=single]{js}
@@ -32,7 +38,7 @@ frame=single]{js}
 db.articles.find({year: 2017}).count()
 \end{minted}
 
-En esta simple query podemos ver la importancia que adquieren los índices en cuanto a tiempo de ejecución:
+Aprovechando que esta query es simple, podemos ver la importancia que adquieren los índices en cuanto a tiempo de ejecución:
 
 \begin{figure}[H]
   \centering
@@ -42,4 +48,126 @@ En esta simple query podemos ver la importancia que adquieren los índices en cu
   \caption{A la izquierda, la query sin indice, a la deracha, aplicando un índice sobre la columna year.}
 \end{figure}
 
-El tiempo de respuesta es aproximadamente 5 veces inferior al hacer uso del índice.
+El tiempo de respuesta es casi 7 veces inferior al hacer uso del índice.
+
+\subsection{Número de autores ocasionales (menos de 5 publicaciones).}
+
+En esta ocasión no hará falta hacer uso del \textit{aggregation framework}, si no que haremos una busqueda utilizando la función \textbf{find()}.
+
+\begin{minted}[
+frame=single]{js}
+db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles",
+  "$inproceedings"]}, 5]}}).count()
+\end{minted}
+
+\subsection{Número de artículos y de artículos en congresos de los diez autores con más publicaciones en total.}
+
+Volvemos a usar \textit{aggregation framework} y construimos un \textit{pipeline} con varios pasos. Primero contamos el número de cada tipo de publicacion de cada uno de los autores. A coninuación, creamos un nuevo campo con el con \textbf{\$addFields} con el total de publicaciones. Con \textbf{\$sort} y \textbf{\$limit} ordenamos por el campo recién creado y nos quedamos solo con los 10 primeros, es decir, con los autores que más publicaciones tienes. Por último, y con el \textit{stage} \textbf{\$project}, nos quedamos solo con los campos que nos interesan (el campo \textbf{\_id} se incluye por defecto si no se especifica lo contrario).
+
+\begin{minted}[
+frame=single]{js}
+db.authors.aggregate(
+  [
+    {$project: {
+      "total_incollections": {$size: {$ifNull: ['$incollections', []]},},
+      "total_inproceedings": {$size: {$ifNull: ['$inproceedings', []]},},
+      "total_articles": {$size: {$ifNull: ['$articles', []]},}
+    }},
+    {$addFields: {
+      "total_publications": { $add: [ "$total_incollections", "$total_inproceedings",
+				      "$total_articles" ] }
+    }},
+    {$sort : { total_publications : -1 } },
+    {$limit : 10},
+    {$project: {
+      "total_articles": 1,
+      "total_inproceedings": 1
+    )}
+  ],
+  { allowDiskUse: true }
+)
+\end{minted}
+
+\subsection{Número medio de autores por publicación.}
+
+En este caso vamos a tener que hacer consulta a varias coleciones y luego hacer calculos con los datos obtenidos en estas consultas.
+
+En primer lugar realizamos consultas en cada una de las colecciones para obtener el número total de autores, incluyendo duplicados. Es decir, si por ejemplo, en un artículo han participado 3 autores, se sumara 3 a la cuenta de autores para esta colección. Estos resultados son sumados y el total lo dividimos por el número total de publicaciones guardadas.
+
+\begin{minted}[
+frame=single]{js}
+(db.articles.aggregate([
+  {$match: {author : {$exists: true}}}, 
+  {$project: {num_authors: { $size: '$author' }}}, 
+  {$group: {_id: '', num_authors: {$sum: '$num_authors'}}}, 
+  {$project: {_id: 0, 'num_authors': '$num_authors'}}])
+  .next()['num_authors'] +
+db.incollections.aggregate([
+  {$match: {author : {$exists: true}}}, 
+  {$project: {num_authors: { $size: '$author' }}}, 
+  {$group: {_id: '', num_authors: {$sum: '$num_authors'}}}, 
+  {$project: {_id: 0, 'num_authors': '$num_authors'}}])
+  .next()['num_authors'] +
+db.inproceedings.find({author : {$exists: true}}).count())/
+(db.articles.find().count() + 
+  db.incollections.find().count() + 
+  db.inproceedings.find().count())
+\end{minted}
+
+\subsection{Lista de coautores de un autor.}
+
+Para poder recuperar esta información, será necesario acceder a cada una de las publicaciones de las lista de publicaciones de un autor, ``seguir'' la referencia para obtener la publicación, y extraer los autores de esta. Para poder ``seguir'' una referencia a otro documento, \textit{aggregation framework} cuenta con el \textit{stage} \textbf{\$lookup}, al que le decimos en que colección buscar y que campos tiene que utilizar a la hora de realizar la busqueda.
+
+\begin{minted}[
+frame=single]{js}
+db.authors.aggregate([
+  { $match : { _id : "Chin-Wang Tao" } },
+  {$lookup:
+    {
+      from: "articles",
+      localField: "articles._id",
+      foreignField: "_id",
+      as: "articles_detail"
+    }
+  },
+  {$lookup:
+    {
+      from: "incollections",
+      localField: "incollections._id",
+      foreignField: "_id",
+      as: "incollections_detail"
+    }
+  },
+  {$project:{
+      _id : 1,
+      authors_detail : { $concatArrays: [ "$articles_detail", "$incollections_detail" ] }
+    } 
+  },
+  {$project: {
+    "_id": 0,
+    "results": {
+      $reduce: {
+        input: "$authors_detail.author",
+        initialValue: [],
+        in: { $concatArrays : ["$$value", "$$this"] }
+      }
+    }
+  }
+  },
+  { $unwind : "$results" },
+  {$group: {
+    _id: "$results",
+    }
+  },
+  {$group: {
+      _id: null,
+      coauthors: { $push: { _id: "$_id"} }
+    }
+  },
+  {$project: {
+      _id: 0,
+      "coauthors": "$coauthors._id"
+    }
+  }
+])
+\end{minted}
