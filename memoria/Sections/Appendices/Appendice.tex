@@ -1,3 +1,25 @@
+\section{Creación de vistas}\label{sec:parser}
+
+De forma similar que en bases de datos relaciones, es posible crear vistas. Las vistas son consultas sobre diferentes tablas a través de los campos que designemos. Una vez creada una vista, las consultas se realizan de la misma forma que si fuese una colección, pudiendo filtrar por alguno de sus campos.
+
+En nuestro caso, hemos creado la vista \textit{publications_extended}. Esta vista, a partir de la colección \textit{authors} que contiene un documento por cada autor y algunos campos básicos de cada tipo de documento, incluyendo el campo _id, cruzando con el resto de colecciones con diferentes publicaciones, conseguimos unificar toda la información extendida sobre una vista. Al incluir nuevos documentos en las colecciones de origen, la vista automáticamente devuelve dichos registros. La definición es la siguiente:
+
+\begin{minted}[
+frame=single]{js}
+db.createView (
+   "publications_extended",
+   "authors",
+   [
+     { $lookup: { from: "articles", localField: "articles._id", foreignField: "_id", as: "articles_extended" } },
+     { $lookup: { from: "incollections", localField: "incollections._id", foreignField: "_id", as: "incollections_extended" } },
+     { $lookup: { from: "inproceedings", localField: "inproceedings._id", foreignField: "_id", as: "inproceedings_extended" } },
+     { $project: { articles_extended: 1, incollections_extended: 1, inproceedings_extended: 1}}
+   ]
+)
+\end{minted}
+
+
 \section{Parseador de XML a JSON}\label{sec:parser}
 
 En construcción.
+
