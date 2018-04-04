@@ -45,14 +45,14 @@ Aprovechando que esta query es simple, podemos ver la importancia que adquieren 
     \centering
         \includegraphics[width=0.4\textwidth]{Figures/wo_year_idx}
         \includegraphics[width=0.4\textwidth]{Figures/year_idx}
-  \caption{A la izquierda, la query sin indice, a la deracha, aplicando un índice sobre la columna year.}
+  \caption{A la izquierda, la query sin indice, a la derecha, aplicando un índice sobre la columna year.}
 \end{figure}
 
 El tiempo de respuesta es casi 7 veces inferior al hacer uso del índice.
 
 \subsection{Número de autores ocasionales (menos de 5 publicaciones).}
 
-En esta ocasión no hará falta hacer uso del \textit{aggregation framework}, si no que haremos una busqueda utilizando la función \textbf{find()}.
+En esta ocasión no hará falta hacer uso del \textit{aggregation framework}, si no que haremos una búsqueda utilizando la función \textbf{find()}.
 
 \begin{minted}[
 frame=single]{js}
@@ -62,7 +62,7 @@ db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles",
 
 \subsection{Número de artículos y de artículos en congresos de los diez autores con más publicaciones en total.}
 
-Volvemos a usar \textit{aggregation framework} y construimos un \textit{pipeline} con varios pasos. Primero contamos el número de cada tipo de publicacion de cada uno de los autores. A coninuación, creamos un nuevo campo con el con \textbf{\$addFields} con el total de publicaciones. Con \textbf{\$sort} y \textbf{\$limit} ordenamos por el campo recién creado y nos quedamos solo con los 10 primeros, es decir, con los autores que más publicaciones tienes. Por último, y con el \textit{stage} \textbf{\$project}, nos quedamos solo con los campos que nos interesan (el campo \textbf{\_id} se incluye por defecto si no se especifica lo contrario).
+Volvemos a usar \textit{aggregation framework} y construimos un \textit{pipeline} con varios pasos. Primero contamos el número de cada tipo de publicacion de cada uno de los autores. A continuación, creamos un nuevo campo con el con \textbf{\$addFields} con el total de publicaciones. Con \textbf{\$sort} y \textbf{\$limit} ordenamos por el campo recién creado y nos quedamos solo con los 10 primeros, es decir, con los autores que más publicaciones tienen. Por último, y con el \textit{stage} \textbf{\$project}, nos quedamos solo con los campos que nos interesan (el campo \textbf{\_id} se incluye por defecto si no se especifica lo contrario).
 
 \begin{minted}[
 frame=single]{js}
@@ -75,7 +75,7 @@ db.authors.aggregate(
     }},
     {$addFields: {
       "total_publications": { $add: [ "$total_incollections", "$total_inproceedings",
-				      "$total_articles" ] }
+                  "$total_articles" ] }
     }},
     {$sort : { total_publications : -1 } },
     {$limit : 10},
@@ -116,7 +116,7 @@ db.inproceedings.find({author : {$exists: true}}).count())/
 
 \subsection{Lista de coautores de un autor.}
 
-Para poder recuperar esta información, será necesario acceder a cada una de las publicaciones de las lista de publicaciones de un autor, ``seguir'' la referencia para obtener la publicación, y extraer los autores de esta. Para poder ``seguir'' una referencia a otro documento, \textit{aggregation framework} cuenta con el \textit{stage} \textbf{\$lookup}, al que le decimos en que colección buscar y que campos tiene que utilizar a la hora de realizar la busqueda.
+Para poder recuperar esta información, será necesario acceder a cada una de las publicaciones de la lista de publicaciones de un autor, ``seguir'' la referencia para obtener la publicación, y extraer los autores de esta. Para poder ``seguir'' una referencia a otro documento, \textit{aggregation framework} cuenta con el \textit{stage} \textbf{\$lookup}, al que le decimos en que colección buscar y que campos tiene que utilizar a la hora de realizar la busqueda.
 
 \begin{minted}[
 frame=single]{js}
