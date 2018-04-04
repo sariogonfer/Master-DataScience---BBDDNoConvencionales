@@ -16,6 +16,84 @@ db.authors.aggregate([
 ] )
 \end{minted}
 
+
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+/* 1 */
+{
+    "_id" : "Chin-Wang Tao",
+    "publication" : [ 
+        "iPhone as Multi-CAM and Multi-viewer.", 
+        "On the robustness of stability of fuzzy control systems.", 
+        "Adaptive fuzzy PIMD controller for systems with uncertain deadzones.", 
+        "Design and analysis of region-wise linear fuzzy controllers.", 
+        "Adaptive Fuzzy Switched Swing-Up and Sliding Control for the Double-Pendulum-and-Cart System.", 
+        "An Approximation of Interval Type-2 Fuzzy Controllers Using Fuzzy Ratio Switching Type-1 Fuzzy Controllers.", 
+        "Adaptive fuzzy terminal sliding mode controller for linear systems with mismatched time-varying uncertainties.", 
+        "A reduction approach for fuzzy rule bases of fuzzy controllers.", 
+        "Fuzzy Sliding-Mode Formation Control for Multirobot Systems: Design and Implementation.", 
+        "Segmentation of Psoriasis Vulgaris Images Using Multiresolution-Based Orthogonal Subspace Techniques.", 
+        "Fuzzy control for linear plants with uncertain output backlashes.", 
+        "Iris Recognition Using Possibilistic Fuzzy Matching on Local Features.", 
+        "Radial Basis Function Networks With Linear Interval Regression Weights for Symbolic Interval Data.", 
+        "Adaptive fuzzy sliding mode controller for linear systems with mismatched time-varying uncertainties.", 
+        "Design of fuzzy controllers with adaptive rule insertion.", 
+        "Flexible complexity reduced PID-like fuzzy controllers.", 
+        "Interval competitive agglomeration clustering algorithm.", 
+        "Fuzzy sliding-mode control for ball and beam system with fuzzy ant colony optimization.", 
+        "Hybrid robust approach for TSK fuzzy modeling with outliers.", 
+        "Design of a Fuzzy Controller With Fuzzy Swing-Up and Parallel Distributed Pole Assignment Schemes for an Inverted Pendulum and Cart System.", 
+        "Nested design of fuzzy controllers with partial fuzzy rule base.", 
+        "Fuzzy hierarchical swing-up and sliding position controller for the inverted pendulum-cart system.", 
+        "Design of a parallel distributed fuzzy LQR controller for the twin rotor multi-input multi-output system.", 
+        "Fuzzy adaptive approach to fuzzy controllers with spacial model.", 
+        "Simplified type-2 fuzzy sliding controller for wing rock system.", 
+        "Unsupervised fuzzy clustering with multi-center clusters.", 
+        "An advanced fuzzy controller.", 
+        "A Novel Approach to Implement Takagi-Sugeno Fuzzy Models.", 
+        "Fuzzy Swing-Up and Fuzzy Sliding-Mode Balance Control for a Planetary-Gear-Type Inverted Pendulum.", 
+        "A Design of a DC-AC Inverter Using a Modified ZVS-PWM Auxiliary Commutation Pole and a DSP-Based PID-Like Fuzzy Control.", 
+        "Robust fuzzy control for a plant with fuzzy linear model.", 
+        "Comments on \"Reduction of fuzzy rule base via singular value decomposition\".", 
+        "A Novel Fuzzy-Sliding and Fuzzy-Integral-Sliding Controller for the Twin-Rotor Multi-Input-Multi-Output System.", 
+        "Robust L", 
+        "A Fuzzy Logic Approach to Target Tracking", 
+        "Index compression for vector quantisation using modified coding tree assignment scheme.", 
+        "Hybrid SVMR-GPR for modeling of chaotic time series systems with noise and outliers.", 
+        "Parallel Distributed Fuzzy Sliding Mode Control for Nonlinear Mismatched Uncertain Systems.", 
+        "An approach for the robustness comparison between piecewise linear ", 
+        "Interval fuzzy sliding-mode formation controller design.", 
+        "Simplification of a fuzzy mechanism with rule combination.", 
+        "Robust control of systems with fuzzy representation of uncertainties.", 
+        "Checking identities is computationally intractable NP-hard and therefore human provers will always be needed.", 
+        "A kernel-based core growing clustering method.", 
+        "An Alternative Type Reduction Approach Based on Information Combination with Interval Operations for Interval-Valued Fuzzy Sliding Controllers.", 
+        "Designs and analyses of various fuzzy controllers with region-wise linear PID subcontrollers.", 
+        "Adaptive Bound Reduced-Form Genetic Algorithms for B-Spline Neural Network Training.", 
+        "A New Neuro-Fuzzy Classifier with Application to On-Line Face Detection and Recognition.", 
+        "Statistical and Dempster-Shafer Techniques in Testing Structural Integrity of Aerospace Structures.", 
+        "Embedded support vector regression on Cerebellar Model Articulation Controller with Gaussian noise.", 
+        "Vision-Based Obstacle Detection for Mobile Robot in Outdoor Environment.", 
+        "Iris Recognition Using Gabor Filters and the Fractal Dimension.", 
+        "A two-stage design of adaptive fuzzy controllers for time-delay systems with unknown models.", 
+        "Errata: Iris recognition using Gabor filters optimized by the particle swarm algorithm.", 
+        "Texture classification using a fuzzy texture spectrum and neural networks.", 
+        "Iris recognition using Gabor filters optimized by the particle swarm algorithm.", 
+        "FPGA implementation of improved ant colony optimization algorithm for path planning.", 
+        "Medical image compression using principal component analysis.", 
+        "Design of a Kinect Sensor Based Posture Recognition System.", 
+        "A simplified interval type-2 fuzzy CMAC.", 
+        "Path-planning using the behavior cost and the path length with a multi-resolution scheme.", 
+        "Iris recognition using Gabor filters optimized by the particle swarm technique.", 
+        "Design of A Two-Stage Adaptive Fuzzy Controller.", 
+        "Face Detection Using Eigenface and Neural Network."
+    ]
+}
+\end{minted}
+
+
 \subsection{Número de publicaciones de un autor determinado.}
 
 Esta consula es similar a la anterior, pero debemos añadir un paso más en nuestro \textit{pipeline} en el cual contaremos el número de puclicaciones.
@@ -24,11 +102,23 @@ Esta consula es similar a la anterior, pero debemos añadir un paso más en nues
 frame=single]{js}
 db.authors.aggregate([
   { $match : { _id : "Chin-Wang Tao" } }, 
-  { $project: {publication: {$concatArrays: 
+  { $project: {publications: {$concatArrays: 
     ["$incollections.title", "$articles.title", "$inproceedings.title"]}}
   },
   {$project: {number_of_publications: {$size: "$publications"}}}
 ] )
+\end{minted}
+
+
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+/* 1 */
+{
+    "_id" : "Chin-Wang Tao",
+    "number_of_publications" : 64
+}
 \end{minted}
 
 \subsection{Número de artículos en revistas para el año 2017.}
@@ -38,17 +128,45 @@ frame=single]{js}
 db.articles.find({year: 2017}).count()
 \end{minted}
 
-Aprovechando que esta query es simple, podemos ver la importancia que adquieren los índices en cuanto a tiempo de ejecución:
+Aprovechando que esta query es simple, podemos ver la importancia que adquieren los índices en cuanto a tiempo de ejecución. Para ello, generamos el índice sobre el campo year de la siguiente forma:
+
+\begin{minted}[
+frame=single]{js}
+db.articles.createIndex({year:1})
+\end{minted}
+
+
+\begin{minted}[
+frame=single]{js}
+/* 1 */
+{
+    "createdCollectionAutomatically" : false,
+    "numIndexesBefore" : 1,
+    "numIndexesAfter" : 2,
+    "ok" : 1.0
+}
+\end{minted}
+
+Vemos que el resultado es satisfactorio y que a partir de este momento, además del índice originario (sobre _id), tenemos índice sobre year.
+
+La comparativa en tiempos de ejecución es la siguiente:
 
 \begin{figure}[H]
   \centering
     \centering
         \includegraphics[width=0.4\textwidth]{Figures/wo_year_idx}
         \includegraphics[width=0.4\textwidth]{Figures/year_idx}
-  \caption{A la izquierda, la query sin indice, a la derecha, aplicando un índice sobre la columna year.}
+  \caption{A la izquierda, la query sin índice, a la derecha, aplicando un índice sobre la columna year.}
 \end{figure}
 
 El tiempo de respuesta es casi 7 veces inferior al hacer uso del índice.
+
+Como resultado, independientemente del uso de índice, obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+122909
+\end{minted}
 
 \subsection{Número de autores ocasionales (menos de 5 publicaciones).}
 
@@ -58,6 +176,14 @@ En esta ocasión no hará falta hacer uso del \textit{aggregation framework}, si
 frame=single]{js}
 db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles",
   "$inproceedings"]}, 5]}}).count()
+\end{minted}
+
+
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+1306077
 \end{minted}
 
 \subsection{Número de artículos y de artículos en congresos de los diez autores con más publicaciones en total.}
@@ -82,10 +208,85 @@ db.authors.aggregate(
     {$project: {
       "total_articles": 1,
       "total_inproceedings": 1
-    )}
+    }}
   ],
   { allowDiskUse: true }
 )
+\end{minted}
+
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+/* 1 */
+{
+    "_id" : "H. Vincent Poor",
+    "total_inproceedings" : 340,
+    "total_articles" : 923
+}
+
+/* 2 */
+{
+    "_id" : "Lajos Hanzo",
+    "total_inproceedings" : 371,
+    "total_articles" : 607
+}
+
+/* 3 */
+{
+    "_id" : "Mohamed-Slim Alouini",
+    "total_inproceedings" : 391,
+    "total_articles" : 556
+}
+
+/* 4 */
+{
+    "_id" : "Philip S. Yu",
+    "total_inproceedings" : 477,
+    "total_articles" : 389
+}
+
+/* 5 */
+{
+    "_id" : "Wen Gao 0001",
+    "total_inproceedings" : 525,
+    "total_articles" : 335
+}
+
+/* 6 */
+{
+    "_id" : "Thomas S. Huang",
+    "total_inproceedings" : 514,
+    "total_articles" : 300
+}
+
+/* 7 */
+{
+    "_id" : "Witold Pedrycz",
+    "total_inproceedings" : 135,
+    "total_articles" : 659
+}
+
+/* 8 */
+{
+    "_id" : "Victor C. M. Leung",
+    "total_inproceedings" : 355,
+    "total_articles" : 432
+}
+
+/* 9 */
+{
+    "_id" : "Xiaodong Wang",
+    "total_inproceedings" : 158,
+    "total_articles" : 525
+}
+
+/* 10 */
+{
+    "_id" : "C.-C. Jay Kuo",
+    "total_inproceedings" : 416,
+    "total_articles" : 251
+}
 \end{minted}
 
 \subsection{Número medio de autores por publicación.}
@@ -112,6 +313,13 @@ db.inproceedings.find({author : {$exists: true}}).count())/
 (db.articles.find().count() + 
   db.incollections.find().count() + 
   db.inproceedings.find().count())
+\end{minted}
+
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+1.647618039090564
 \end{minted}
 
 \subsection{Lista de coautores de un autor.}
@@ -173,6 +381,57 @@ db.authors.aggregate([
 \end{minted}
 
 
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+/* 1 */
+{
+    "coauthors" : [ 
+        "Hung T. Nguyen 0002", 
+        "Seetharami R. Seelam", 
+        "Roberto A. Osegueda", 
+        "Wei-Yen Wang", 
+        "Vladik Kreinovich", 
+        "Cheng-Yuan Yang", 
+        "Sun-Yuan Kung", 
+        "Yao-Chu Hsueh", 
+        "Ana C. Holguin", 
+        "Yung-Chih Liu", 
+        "Chien-Ming Wang", 
+        "Meng-Cheng Yang", 
+        "Wiley E. Thompson", 
+        "Rustom Mamlook", 
+        "Y. C. Chen", 
+        "Chen-Chia Chuang", 
+        "Huei-Rong Chen", 
+        "Chunlin Chen", 
+        "Yeong-Hwa Chang", 
+        "Chen-Guan Chang", 
+        "Chia-Wen Chang", 
+        "Jin-Shiuh Taur", 
+        "J. H. Chang", 
+        "C. L. Tsai", 
+        "Mei-Lang Chan", 
+        "Heng-Yi Lin", 
+        "Chien-Chou Chen", 
+        "U. S. Chen", 
+        "Chin-Wang Tao", 
+        "Shun-Feng Su", 
+        "Chung-Chih Tsai", 
+        "Chia-Chu Hsu", 
+        "Chih-Ching Hsiao", 
+        "C. M. Wang", 
+        "Ching-Wen Yang", 
+        "Tsu-Tian Lee", 
+        "Gwo-Her Lee", 
+        "Hung-Wei Lin", 
+        "Jin-Tsong Jeng", 
+        "Tzuen Wuu Hsieh"
+    ]
+}
+\end{minted}
+
 \subsection{Edad de los 5 autores con el periodo de publicaciones más largo.}
 
 En primer lugar, y usando las facilidades de  \textit{aggregation framework}, agrupamos todas las publicaciones de un mismo autor en una lista única. A continuación nos quedamos de estas listas solo con el año de publicación de estas, y filtramos tanto el máximo como el mínimo de de estos años. Ya con esto, podemos calcular la diferencia entre ambos años y realizar una ordenación a partir de este campo para quedarnos con los cinco primeros.
@@ -205,6 +464,42 @@ db.authors.aggregate(
 )
 \end{minted}
 
+
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+/* 1 */
+{
+    "_id" : "Alan M. Turing",
+    "age" : 75
+}
+
+/* 2 */
+{
+    "_id" : "Rudolf Carnap",
+    "age" : 71
+}
+
+/* 3 */
+{
+    "_id" : "David Nelson",
+    "age" : 68
+}
+
+/* 4 */
+{
+    "_id" : "Eric Weiss",
+    "age" : 64
+}
+
+/* 5 */
+{
+    "_id" : "Bernard Widrow",
+    "age" : 64
+}
+\end{minted}
+
 \subsection{Número de autores novatos.}
 
 Caso idéntico al anterior, cambiando las fases finales para quedarnos con aquellos cuya ``edad'' es inferior a 5 años, y contar el número de elementos que obtenemos.
@@ -230,7 +525,14 @@ db.authors.aggregate(
   ],
   { allowDiskUse: true }
 ).itcount()
+\end{minted}
 
+
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+999264
 \end{minted}
 
 \subsection{Porcentaje de publicaciones en revistas con respecto al total de publicaciones.}
@@ -244,3 +546,13 @@ db.articles.find().count()*100/(
   db.incollections.find().count() + 
   db.inproceedings.find().count())
 \end{minted}
+
+
+Como resultado obtenemos:
+
+\begin{minted}[
+frame=single]{js}
+49.15410131860515
+\end{minted}
+
+
