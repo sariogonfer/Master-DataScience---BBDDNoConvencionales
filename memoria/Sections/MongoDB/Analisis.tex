@@ -171,3 +171,76 @@ db.authors.aggregate([
   }
 ])
 \end{minted}
+
+
+\subsection{Edad de los 5 autores con el periodo de publicaciones más largo.}
+
+En primer lugar, y usando las facilidades de  \textit{aggregation framework}, agrupamos todas las publicaciones de un mismo autor en una lista única. A continuación nos quedamos de estas listas solo con el año de publicación de estas, y filtramos tanto el máximo como el mínimo de de estos años. Ya con esto, podemos calcular la diferencia entre ambos años y realizar una ordenación a partir de este campo para quedarnos con los cinco primeros.
+
+\begin{minted}[
+frame=single]{js}
+db.authors.aggregate(
+  [
+    {$project: {
+      publication: {$concatArrays: [
+        {$ifNull: ['$incollections', []]},
+        {$ifNull: ['$inproceedings', []]},
+        {$ifNull: ['$articles', []]}]}
+    }},
+    {$addFields: {
+      max_publication: { $max: "$publication.year"},
+      min_publication: { $min: "$publication.year"}
+    }},
+    {$addFields: {
+      age: { $subtract: [ "$max_publication", "$min_publication"] }
+    }},
+    {$sort : { age : -1 } },
+    {$limit : 5},
+    {$project: {
+      _id: 1,
+      age: 1
+    }}
+  ],
+  { allowDiskUse: true }
+)
+\end{minted}
+
+\subsection{Número de autores novatos.}
+
+Caso idéntico al anterior, cambiando las fases finales para quedarnos con aquellos cuya ``edad'' es inferior a 5 años, y contar el número de elementos que obtenemos.
+
+\begin{minted}[
+frame=single]{js}
+db.authors.aggregate(
+  [
+    {$project: {
+      publication: {$concatArrays: [
+        {$ifNull: ['$incollections', []]},
+        {$ifNull: ['$inproceedings', []]},
+        {$ifNull: ['$articles', []]}]}
+    }},
+    {$addFields: {
+      max_publication: { $max: "$publication.year"},
+      min_publication: { $min: "$publication.year"}
+    }},
+    {$addFields: {
+      "age": { $subtract: [ "$max_publication", "$min_publication"] }
+    }},
+    {'$match':{'age': {'$lt': 5}}}
+  ],
+  { allowDiskUse: true }
+).itcount()
+
+\end{minted}
+
+\subsection{Porcentaje de publicaciones en revistas con respecto al total de publicaciones.}
+
+Al igual que hicimos cuando calculamos el número medio de autores, que tuvimos que hacer varias queries a cada una de las colecciones, para este caso vamos a volver a operar con diversas queries aplicadas sobre las distintas colecciones. Necesitaremos obtener el número de documentos en cada colección y con estos datos podemos calcular el porcentaje de publicaciones en revistas como número de estas dividido entre el número total de publicaciones.
+
+\begin{minted}[
+frame=single]{js}
+db.articles.find().count()*100/(
+  db.articles.find().count() + 
+  db.incollections.find().count() + 
+  db.inproceedings.find().count())
+\end{minted}
