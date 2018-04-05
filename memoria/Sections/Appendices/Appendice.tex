@@ -2,7 +2,7 @@
 
 De forma similar que en bases de datos relaciones, es posible crear vistas. Las vistas son consultas sobre diferentes tablas a través de los campos que designemos. Una vez creada una vista, las consultas se realizan de la misma forma que si fuese una colección, pudiendo filtrar por alguno de sus campos.
 
-En nuestro caso, hemos creado la vista \textit{publications_extended}. Esta vista, a partir de la colección \textit{authors} que contiene un documento por cada autor y algunos campos básicos de cada tipo de documento, incluyendo el campo _id, cruzando con el resto de colecciones con diferentes publicaciones, conseguimos unificar toda la información extendida sobre una vista. Al incluir nuevos documentos en las colecciones de origen, la vista automáticamente devuelve dichos registros. La definición es la siguiente:
+En nuestro caso, hemos creado la vista \textit{publications\_extended}. Esta vista, a partir de la colección \textit{authors} que contiene un documento por cada autor y algunos campos básicos de cada tipo de documento, incluyendo el campo \_id, cruzando con el resto de colecciones con diferentes publicaciones, conseguimos unificar toda la información extendida sobre una vista. Al incluir nuevos documentos en las colecciones de origen, la vista automáticamente devuelve dichos registros. La definición es la siguiente:
 
 \begin{minted}[
 frame=single]{js}
@@ -21,5 +21,6 @@ db.createView (
 
 \section{Parseador de XML a JSON}\label{sec:parser}
 
-En construcción.
+Para realizar el parseo de los datos hemos decidido hacer uso de PySpark para aprovechar la gestión de la memoria que hace. ¿Por qué de esta decisión?. Intentar procesar el fichero \gls{XML} directamente con un script de Python provocaba que las máquinas donde se ejecuba acabaran bloqueandose debido a que se llegaba al límite de la capacidad de la memoria, y por lo que se ha podido comprobar, los paquetes encargados de este parseo no gestionan correctamente estos escenarios.
 
+Otra alternativa era dividir el fichero XML en bloques y procesarlos de manera individual. Así se reduce la carga de datos en memoria y se consigue no llegar al límite de la máquina. 
