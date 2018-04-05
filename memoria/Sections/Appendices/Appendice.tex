@@ -10,10 +10,13 @@ db.createView (
    "publications_extended",
    "authors",
    [
-     { $lookup: { from: "articles", localField: "articles._id", foreignField: "_id", as: "articles_extended" } },
-     { $lookup: { from: "incollections", localField: "incollections._id", foreignField: "_id", as: "incollections_extended" } },
-     { $lookup: { from: "inproceedings", localField: "inproceedings._id", foreignField: "_id", as: "inproceedings_extended" } },
-     { $project: { articles_extended: 1, incollections_extended: 1, inproceedings_extended: 1}}
+     { $lookup: { from: "articles", localField: "articles._id", foreignField: "_id",
+        as: "articles_extended" } },
+     { $lookup: { from: "incollections", localField: "incollections._id", foreignField: "_id",
+        as: "incollections_extended" } },
+     { $lookup: { from: "inproceedings", localField: "inproceedings._id", foreignField: "_id",
+        as: "inproceedings_extended" } },
+     { $project: { articles_extended:1, incollections_extended:1, inproceedings_extended:1}}
    ]
 )
 \end{minted}
