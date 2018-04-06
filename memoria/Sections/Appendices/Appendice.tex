@@ -7,14 +7,22 @@ En nuestro caso, hemos creado la vista \textit{publications\_extended}. Esta vis
 \begin{minted}[
 frame=single]{js}
 db.createView (
-   "publications_extended",
-   "authors",
-   [
-     { $lookup: { from: "articles", localField: "articles._id", foreignField: "_id", as: "articles_extended" } },
-     { $lookup: { from: "incollections", localField: "incollections._id", foreignField: "_id", as: "incollections_extended" } },
-     { $lookup: { from: "inproceedings", localField: "inproceedings._id", foreignField: "_id", as: "inproceedings_extended" } },
-     { $project: { articles_extended: 1, incollections_extended: 1, inproceedings_extended: 1}}
-   ]
+  "publications_extended",
+  "authors",
+  [
+    { $lookup: { 
+      from: "articles", localField: "articles._id",
+	foreignField: "_id", as: "articles_extended" } },
+    { $lookup: { 
+      from: "incollections", localField: "incollections._id", 
+	foreignField: "_id", as: "incollections_extended" } },
+    { $lookup: { 
+      from: "inproceedings", localField: "inproceedings._id",
+	foreignField: "_id", as: "inproceedings_extended" } },
+    { $project: { 
+      articles_extended: 1, incollections_extended: 1,
+	inproceedings_extended: 1}}
+  ]
 )
 \end{minted}
 
@@ -23,4 +31,50 @@ db.createView (
 
 Para realizar el parseo de los datos hemos decidido hacer uso de PySpark para aprovechar la gestión de la memoria que hace. ¿Por qué de esta decisión?. Intentar procesar el fichero \gls{XML} directamente con un script de Python provocaba que las máquinas donde se ejecuba acabaran bloqueandose debido a que se llegaba al límite de la capacidad de la memoria, y por lo que se ha podido comprobar, los paquetes encargados de este parseo no gestionan correctamente estos escenarios.
 
-Otra alternativa era dividir el fichero XML en bloques y procesarlos de manera individual. Así se reduce la carga de datos en memoria y se consigue no llegar al límite de la máquina. 
+Otra alternativa era dividir el fichero XML en bloques y procesarlos de manera individual. Así se reduce la carga de datos en memoria y se consigue no llegar al límite de la máquina. Esta técnica puede se más compleja ya que requiere leer el fichero línea a línea y procesarla para saber si podemos ``cortar'' sobre ella no separar un elemento valido (un \textit{articles} en dos bloques.
+
+Debido a la facilidad de uso que nos ofrece PySpark, y aprovechando que es conetenido de otra materia de este master, lo hemos visto como la opción más recomendable.
+
+\subsection{Pasos}
+
+Para leer el XML abrimos una shell de pyspark con el paquete de java spark-xml:
+
+\begin{minted}[
+frame=single]{js}
+pyspark --packages com.databricks:spark-xml_2.11:0.4.1
+\end{minted}
+
+Desde pyspark ejutamos para cada tipo de publicación el siguiente mandato:
+
+\begin{minted}[
+frame=single]{python}
+df = spark.read.format('com.databricks.spark.xml').option("rowTag",
+  "incollection").load('./dblp.xml')
+\end{minted}
+
+Al no tener un esquema definido, es el propio paquete de \textbf{Spark} el que intenta inferirlo por si mismo. Esto causa problemas al intentar parsear algunos campos. Por ello lo mejor es definir nuestro propio esquema definiendo todos los campos como si se tratasen de ``Strings''. Ya que solo utilizamos este dataframe para transformar el \textit{XML} a \textit{JSON}, y no vamos a realizar ningún tipo de validación u operación con el \textbf{Datafame} que se crea, tratar todos los campos como ``Strings'' es más que suficiente.
+
+\begin{minted}[
+frame=single]{python}
+from pyspark.sql.types import StructField, StringType, StructType
+
+custom_types = []
+for c in df.columns[1:]:
+  custom_types.append(StructField(str(c), StringType(), nullable=True))
+
+custom_schema = StructType(custom_types)
+\end{minted}
+
+Una vez que tengamos creado el \textbf{DataFrame}, solo nos quedará volcarlo como fichero, o más bien, como múltiples ficheros, ya que por el mecanismo interno de funcionamiento de Spark, la salida sera escrita en múltiples ficheros. Tendremos por tanto que indicarla a la función \textit{json()} el directorio donde queremos que vuelque estos ficheros.
+
+\begin{minted}[
+frame=single]{python}
+df.write.json('./incollection')
+\end{minted}
+
+Una vez terminado, nos encontrameros que dentro del directorio anterior, se han creado varios ficheros cuyos nombres tiene el formato \textit{PARTXXXXX\_\*.json}. Para unirlo todos en uno solo (en caso de querer hacerlo), podemos usar las \textbf{tools} básicas que nos ofrece el ofrece el sistema operativo, en nuestro caso, una distribución basada en \textbf{Debian}:
+
+\begin{minted}[
+frame=single]{bash}
+cat PART* > out.json
+\end{minted}

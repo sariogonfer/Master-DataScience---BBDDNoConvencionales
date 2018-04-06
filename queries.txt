@@ -202,11 +202,11 @@ db.authors.aggregate([
            as: "incollections_detail"
          }
     },
-    {   
+    {
         $project:{
             _id : 1,
             authors_detail : { $concatArrays: [ "$articles_detail", "$incollections_detail" ] }
-        } 
+        }
     },
     {
         $project: {
@@ -244,52 +244,52 @@ db.authors.aggregate([
 # 8. Edad de los 5 autores con un periodo de publicaciones más largo (Se considera la Edad de un autor al número de años transcurridos desde la fecha de su primera publicación hasta la última registrada).
 
 db.authors.aggregate(
-    [
-        {$project: {
-            publication: {$concatArrays: [
-                {$ifNull: ['$incollections', []]},
-                {$ifNull: ['$inproceedings', []]},
-                {$ifNull: ['$articles', []]}]}
-        }},
-        {$addFields: {
-            max_publication: { $max: "$publication.year"},
-            min_publication: { $min: "$publication.year"}
-        }},
-        {$addFields: {
-            "age": { $subtract: [ "$max_publication", "$min_publication"] }
-        }},
-        {$sort : { age : -1 } },
-        {$limit : 5},
-        {$project: {
-            _id: 1,
-            age: 1
-        }}
-    ],
-    { allowDiskUse: true }
-    )
+  [
+    {$project: {
+      publication: {$concatArrays: [
+        {$ifNull: ['$incollections', []]},
+        {$ifNull: ['$inproceedings', []]},
+        {$ifNull: ['$articles', []]}]}
+    }},
+    {$addFields: {
+      max_publication: { $max: "$publication.year"},
+      min_publication: { $min: "$publication.year"}
+    }},
+    {$addFields: {
+      age: { $subtract: [ "$max_publication", "$min_publication"] }
+    }},
+    {$sort : { age : -1 } },
+    {$limit : 5},
+    {$project: {
+      _id: 1,
+      age: 1
+    }}
+  ],
+  { allowDiskUse: true }
+)
 
 # 9. Número de autores novatos, es decir, que tengan una Edad menor de 5 años. Se considera la Edad de un autor al número de años transcurridos desde la fecha de su primera publicación hasta la última registrada.
 
 
 db.authors.aggregate(
-    [
-        {$project: {
-            publication: {$concatArrays: [
-                {$ifNull: ['$incollections', []]},
-                {$ifNull: ['$inproceedings', []]},
-                {$ifNull: ['$articles', []]}]}
-        }},
-        {$addFields: {
-            max_publication: { $max: "$publication.year"},
-            min_publication: { $min: "$publication.year"}
-        }},
-        {$addFields: {
-            "age": { $subtract: [ "$max_publication", "$min_publication"] }
-        }},
-        {'$match':{'age': {'$lt': 5}}}
-    ],
-    { allowDiskUse: true }
-    ).itcount()
+  [
+    {$project: {
+      publication: {$concatArrays: [
+        {$ifNull: ['$incollections', []]},
+        {$ifNull: ['$inproceedings', []]},
+        {$ifNull: ['$articles', []]}]}
+    }},
+    {$addFields: {
+      max_publication: { $max: "$publication.year"},
+      min_publication: { $min: "$publication.year"}
+    }},
+    {$addFields: {
+      "age": { $subtract: [ "$max_publication", "$min_publication"] }
+    }},
+    {'$match':{'age': {'$lt': 5}}}
+  ],
+  { allowDiskUse: true }
+).itcount()
 
 # 10. Porcentaje de publicaciones en revistas con respecto al total de publicaciones
 
