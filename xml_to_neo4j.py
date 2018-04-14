@@ -1,5 +1,8 @@
+from tempfile import NamedTemporaryFile
+import html
+
 from pyspark.sql.types import StringType, StructType, StructField, ArrayType
-from pyspark.sql.functions import explode, lit, translate
+from pyspark.sql.functions import concat_ws, lit, translate
 
 
 schema = StructType([
@@ -13,32 +16,38 @@ schema = StructType([
    ))
 ])
 
-incollections_df = spark.read.format('com.databricks.spark.xml').option(
+# El fichro tiene caracteres escapadas HTML (como &agrave;), por lo que es
+# necesario limpiarlo.
+
+with open('./dblp.xml') as source, NamedTemporaryFile('w') as unescaped_src:
+    for line in source:
+        unescaped_src.write(html.unescape(line))
+
+    incollections_df = spark.read.format('com.databricks.spark.xml').option(
         "rowTag", "incollection").option('charset', "ISO-8859-1").schema(
-                schema).load('./dblp.xml')
-inproceedings_df = spark.read.format('com.databricks.spark.xml').option(
+        schema).load(unescaped_src.name)
+    inproceedings_df = spark.read.format('com.databricks.spark.xml').option(
         "rowTag", "inproceedings").option('charset',
-                "ISO-8859-1").schema(schema).load('./dblp.xml')
-articles_df = spark.read.format('com.databricks.spark.xml').option("rowTag",
-        "articles").option('charset', "ISO-8859-1").schema(schema).load(
-                './dblp.xml')
+        "ISO-8859-1").schema(schema).load(unescaped_src.name)
+    articles_df = spark.read.format('com.databricks.spark.xml').option("rowTag",
+        "article").option('charset', "ISO-8859-1").schema(schema).load(
+        unescaped_src.name)
 
-publications_df = incollections_df.withColumn('LABEL',
-        lit('incollection;publication')).union(inproceedings_df.withColumn(
-            'LABEL', lit('inproceedings;publication'))).union(
-                    articles_df.withColumn('LABEL',
-                        lit('articles;publication')))
+    publications_df = incollections_df.withColumn('LABEL',
+        lit('Incollection')).union(inproceedings_df.withColumn('LABEL',
+        lit('Inproceeding'))).union(articles_df.withColumn('LABEL', lit(
+            'Article')))
 
-publications_df.withColumn('id', translate('_key', '/', '_')).select('id',
+    publications_df = publications_df.filter(publications_df._key.isNotNull())
+
+    publications_df.withColumn('id', translate('_key', '/', '_')).select('id',
         'title', 'year', 'LABEL').write.option('escape', '"').csv(
-                './csv/publications')
+        './csv/publications')
 
-publications_df.withColumn('_author', explode('author._VALUE')).withColumn(
-        'LABEL', lit('author')).select('_author', 'LABEL').write.option(
-                'escape', '"').csv('./csv/authors')
+    publications_df.withColumn('_author', explode('author._VALUE')).select(
+        '_author').write.option('escape', '"').csv('./csv/authors')
 
-publications_df.withColumn('start', explode('author._VALUE')).withColumn(
-        'end', translate('_key', '/', '_')).withColumn('TYPE',
-                lit('WRITES')).select('start', 'end', 'TYPE').write.option(
-                        'escape', '"').csv('./csv/author_publication_rel')
+    publications_df.withColumn('start', explode('author._VALUE')).withColumn(
+        'end', translate('_key', '/', '_')).select('start', 'end').write.option(
+            'escape', '"').csv('./csv/rels')
 
