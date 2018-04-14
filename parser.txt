@@ -27,22 +27,15 @@ df.write.json('./incollection')
 
 Para sacar los CSVs necesarios para Neo4J, desde pyspark ejecutaremos lo siguiente (ejemplo incollections):
 
-from pyspark.sql.functions import explode, lit, translate
-df = spark.read.format('com.databricks.spark.xml').option("rowTag", "incollection").load('./dblp.xml')
+Para extraer los CSVs, el código anda en xml_to_neo4j.py
 
-df.withColumn('LABEL', lit('publication;incollections')).withColumn('id', translate('_key', '/', '_')).select('_key', 'year', 'title', 'LABEL').write.csv('./csv/incollections')
+Para importar estos csv, se utiliza neo4j-admin import.
 
-df.withColumn('a', explode('author')).withColumn('id', translate('_key', '/', '_')).withColumn('TYPE', lit('WRITES')).select('id', 'a._VALUE', 'TYPE').write.csv('./csv/incollection_author_rel')
+neo4j-admin import -nodes:Publication "publications.header.csv,publications/part.*" -nodes:Author "authors.header.csv,authors/part.*" -relationships:Writed "rels.header.csv,rels/part.*" --ignore-duplicate-nodes=true
 
-df.withColumn('a', explode('author')).select('a._VALUE').distinct().withColumn('LABEL', lit('author')).select('_VALUE', 'LABEL').write.csv('./csv/authors')
+Las cabeceras son:
 
-
-Luego hay que meterse y juntar los csv:
-
-cat part* > lo_que_sea.csv
-
-Y escribir las cabeceras:
-Para autores: name:ID,:LABEL
-Para publicaciones: key:ID,year:int,title,:LABEL
-Para relaciones: :START_ID,:END_ID,:TYPE
+authors.csv: name:ID
+publications.csv: key:ID,title,year:int,:LABEL
+rels.csv: :START_ID,:END_ID
 
