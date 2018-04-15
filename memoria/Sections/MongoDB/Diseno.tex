@@ -81,30 +81,118 @@ Los datos han sido cargados usando la herramienta \textbf{mongoimport}. Esta her
 Para cargar nuestros datos se han ejecutado los siguientes comandos:
 
 \begin{minted}[]{bash}
-mongoimport --db=dblp --collection=articles articles/articles.json	
-mongoimport --db=dblp --collection=incollections incollections/incollections.json	
-mongoimport --db=dblp --collection=Inproceedings Inproceedings/Inproceedings.json	
+mongoimport --db=dblp --collection=articles json/articles.json
+mongoimport --db=dblp --collection=incollections json/incollections.json
+mongoimport --db=dblp --collection=inproceedings json/inproceedings.json
 \end{minted}
 
-Al cargar los datos de esta forma, los \textit{array} de autores y de ee han sido cargados como \textit{arrays} de objetos, los cuales tienen un campo llamado \textbf{\_VALUE} que contiene la cadena de texto. Es por ello que aplicamos un preprocesamiento para convertir estos campos en \textit{arrays} formados por cadenas de texto. El código utilizado para ello:
+Una vez cargado, para comenzar a ejecutar comandos y queries sobre nuestros datos, debemos indicar la bbdd que vamos a utilizar, en nuestro caso "dblp", que es la que hemos indicado en los comandos de mongoimport. Lo indicamos mediante el comando siguiente:
 
 \begin{minted}[
 frame=single]{js}
-db.articles.aggregate([{$addFields: {author: '$author._VALUE', title: '$title._VALUE',
-  ee: '$ee._VALUE'}}, {$out: "articles"}])
-
-db.incollections.aggregate([{$addFields: {author: '$author._VALUE', ee: '$ee._VALUE'}},
-  {$out: "incollections"}])
+use dblp
 \end{minted}
 
-En el caso de los \textit{inproceedings}, también necesitamos cambiar el tipo del campo año ya que no ha sido reconocido como númerico al realizar la carga.
+Como salida, obtendremos:
+
+\begin{minted}[
+frame=single]{js}
+switched to db dblp
+\end{minted}
+
+Al haber cargado los datos a partir del formato indicado en los ficheros json, los \textit{array} de autores han sido cargados como \textit{arrays} de objetos, los cuales tienen un campo llamado \textbf{\_VALUE} que contiene la cadena de texto. Es por ello que aplicamos un preprocesamiento para convertir estos campos en \textit{arrays} formados por cadenas de texto.
+
+El código utilizado para ello:
+
+\begin{minted}[
+frame=single]{js}
+db.articles.aggregate([{$addFields: {author: '$author._VALUE'}}, {$out: "articles"}])
+\end{minted}
+\begin{minted}[
+frame=single]{js}
+db.incollections.aggregate([{$addFields: {author: '$author._VALUE'}}, {$out: "incollections"}])
+\end{minted}
+\begin{minted}[
+frame=single]{js}
+db.inproceedings.aggregate([{$addFields: {author: '$author._VALUE'}}, {$out: "inproceedings"}])
+\end{minted}
+
+Además, tambien necesitamos cambiar el tipo del campo año ya que no ha sido reconocido como númerico al realizar la carga. Por ello ejecutamos el siguiente código:
   
 \begin{minted}[
 frame=single]{js}
-db.inproceedings.find().forEach(function(obj){
-  db.inproceedings.update(
-    {"_id": obj._id, 'year': {$exists : true}},
-    {$set: {"year": NumberInt(obj.year)}
-  })
-})
+db.articles.find().forEach(function(obj){
+    db.articles.update(
+        {"_id": obj._id, 'year': {$exists : true}},
+        {$set: {"year": NumberInt(obj.year)}})
+    })
 \end{minted}
+
+\begin{minted}[
+frame=single]{js}
+db.incollections.find().forEach(function(obj){
+    db.incollections.update(
+        {"_id": obj._id, 'year': {$exists : true}},
+        {$set: {"year": NumberInt(obj.year)}})
+    })
+\end{minted}
+
+\begin{minted}[
+frame=single]{js}
+db.inproceedings.find().forEach(function(obj){
+    db.inproceedings.update(
+        {"_id": obj._id, 'year': {$exists : true}},
+        {$set: {"year": NumberInt(obj.year)}})
+    })
+\end{minted}
+
+Para el análisis de los datos a lo largo de toda la práctica, hemos generado una nueva colección \textbf{authors}. Esta colección contiene por cada documento, un autor y la documentación que ha generado. Para generar esta nueva colección, hemos obtenido colección por colección e incluido ese título en función del autor:
+
+\begin{minted}[
+frame=single]{js}
+db.incollections.aggregate([
+    {$unwind: "$author"},
+    {$group:
+        { _id: "$author",
+          incollections: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}],
+    { allowDiskUse: true })
+    .forEach(
+        function(obj){
+            db.authors.update(
+                {_id: obj._id},
+                {$set: {"incollections": obj.incollections}},
+                {upsert: true})})
+\end{minted}
+
+\begin{minted}[
+frame=single]{js}
+db.articles.aggregate([
+    {$unwind: "$author"},
+    {$group:
+        { _id: "$author",
+          articles: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}],
+     { allowDiskUse: true })
+     .forEach(
+        function(obj){
+            db.authors.update(
+                {_id: obj._id},
+                {$set: {"articles": obj.articles}},
+                {upsert: true})})
+\end{minted}
+
+\begin{minted}[
+frame=single]{js}
+db.inproceedings.aggregate([
+    {$unwind: "$author"},
+    {$group: 
+        {_id: "$author",
+         inproceedings: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}],
+    { allowDiskUse: true })
+    .forEach(function(obj){
+        db.authors.update(
+            {_id: obj._id},
+            {$set: {"inproceedings": obj.inproceedings}},
+            {upsert: true})})
+\end{minted}
+
+

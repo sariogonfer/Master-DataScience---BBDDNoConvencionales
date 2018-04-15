@@ -75,20 +75,26 @@ frame=single,breaklines]{js}
         "A New Neuro-Fuzzy Classifier with Application to On-Line Face Detection and Recognition.", 
         "Statistical and Dempster-Shafer Techniques in Testing Structural Integrity of Aerospace Structures.", 
         "Embedded support vector regression on Cerebellar Model Articulation Controller with Gaussian noise.", 
-        "Vision-Based Obstacle Detection for Mobile Robot in Outdoor Environment.", 
         "Iris Recognition Using Gabor Filters and the Fractal Dimension.", 
         "A two-stage design of adaptive fuzzy controllers for time-delay systems with unknown models.", 
         "Errata: Iris recognition using Gabor filters optimized by the particle swarm algorithm.", 
         "Texture classification using a fuzzy texture spectrum and neural networks.", 
         "Iris recognition using Gabor filters optimized by the particle swarm algorithm.", 
+        "Sliding control for linear uncertain systems.", 
         "FPGA implementation of improved ant colony optimization algorithm for path planning.", 
         "Medical image compression using principal component analysis.", 
         "Design of a Kinect Sensor Based Posture Recognition System.", 
         "A simplified interval type-2 fuzzy CMAC.", 
+        "iOS based Multi-Cloud Manage System.", 
+        "A Novel Approach to Implement Takagi-Sugeno Fuzzy Models.", 
         "Path-planning using the behavior cost and the path length with a multi-resolution scheme.", 
         "Iris recognition using Gabor filters optimized by the particle swarm technique.", 
+        "Hybrid robust LS-SVMR with outliers for MIMO system.", 
         "Design of A Two-Stage Adaptive Fuzzy Controller.", 
-        "Face Detection Using Eigenface and Neural Network."
+        "Face Detection Using Eigenface and Neural Network.", 
+        "Robust control of the mismatched systems with the fuzzy integral sliding controller.", 
+        "Support Vector Regression for Controller Approximation.", 
+        "Robust clustering algorithm for the symbolic interval-values data with outliers."
     ]
 }
 \end{minted}
@@ -117,7 +123,7 @@ frame=single]{js}
 /* 1 */
 {
     "_id" : "Chin-Wang Tao",
-    "number_of_publications" : 64
+    "number_of_publications" : 70
 }
 \end{minted}
 
@@ -165,7 +171,7 @@ Como resultado, independientemente del uso de índice, obtenemos:
 
 \begin{minted}[
 frame=single]{js}
-122909
+136121
 \end{minted}
 
 \subsection{Número de autores ocasionales (menos de 5 publicaciones).}
@@ -183,7 +189,7 @@ Como resultado obtenemos:
 
 \begin{minted}[
 frame=single]{js}
-1306077
+1988889
 \end{minted}
 
 \subsection{Número de artículos y de artículos en congresos de los diez autores con más publicaciones en total.}
@@ -221,71 +227,71 @@ frame=single]{js}
 /* 1 */
 {
     "_id" : "H. Vincent Poor",
-    "total_inproceedings" : 340,
-    "total_articles" : 923
+    "total_inproceedings" : 477,
+    "total_articles" : 1024
 }
 
 /* 2 */
 {
-    "_id" : "Lajos Hanzo",
-    "total_inproceedings" : 371,
-    "total_articles" : 607
+    "_id" : "Mohamed-Slim Alouini",
+    "total_inproceedings" : 533,
+    "total_articles" : 600
 }
 
 /* 3 */
 {
-    "_id" : "Mohamed-Slim Alouini",
-    "total_inproceedings" : 391,
-    "total_articles" : 556
+    "_id" : "Philip S. Yu",
+    "total_inproceedings" : 707,
+    "total_articles" : 389
 }
 
 /* 4 */
 {
-    "_id" : "Philip S. Yu",
-    "total_inproceedings" : 477,
-    "total_articles" : 389
+    "_id" : "Wen Gao 0001",
+    "total_inproceedings" : 734,
+    "total_articles" : 332
 }
 
 /* 5 */
 {
-    "_id" : "Wen Gao 0001",
-    "total_inproceedings" : 525,
-    "total_articles" : 335
+    "_id" : "Wei Wang",
+    "total_inproceedings" : 630,
+    "total_articles" : 430
 }
 
 /* 6 */
 {
-    "_id" : "Thomas S. Huang",
-    "total_inproceedings" : 514,
-    "total_articles" : 300
+    "_id" : "Yu Zhang",
+    "total_inproceedings" : 616,
+    "total_articles" : 429
 }
 
 /* 7 */
 {
-    "_id" : "Witold Pedrycz",
-    "total_inproceedings" : 135,
-    "total_articles" : 659
+    "_id" : "Lajos Hanzo",
+    "total_inproceedings" : 407,
+    "total_articles" : 635
 }
 
 /* 8 */
 {
-    "_id" : "Victor C. M. Leung",
-    "total_inproceedings" : 355,
-    "total_articles" : 432
+    "_id" : "Wei Li",
+    "total_inproceedings" : 554,
+    "total_articles" : 449
 }
 
 /* 9 */
 {
-    "_id" : "Xiaodong Wang",
-    "total_inproceedings" : 158,
-    "total_articles" : 525
+    "_id" : "Li Zhang",
+    "total_inproceedings" : 577,
+    "total_articles" : 404
 }
 
 /* 10 */
 {
-    "_id" : "C.-C. Jay Kuo",
-    "total_inproceedings" : 416,
-    "total_articles" : 251
+    "_id" : "Yang Liu",
+    "total_inproceedings" : 553,
+    "total_articles" : 417
 }
 \end{minted}
 
@@ -309,7 +315,12 @@ db.incollections.aggregate([
   {$group: {_id: '', num_authors: {$sum: '$num_authors'}}}, 
   {$project: {_id: 0, 'num_authors': '$num_authors'}}])
   .next()['num_authors'] +
-db.inproceedings.find({author : {$exists: true}}).count())/
+db.inproceedings.aggregate([
+  {$match: {author : {$exists: true}}}, 
+  {$project: {num_authors: { $size: '$author' }}}, 
+  {$group: {_id: '', num_authors: {$sum: '$num_authors'}}}, 
+  {$project: {_id: 0, 'num_authors': '$num_authors'}}])
+  .next()['num_authors'])/
 (db.articles.find().count() + 
   db.incollections.find().count() + 
   db.inproceedings.find().count())
@@ -319,7 +330,7 @@ Como resultado obtenemos:
 
 \begin{minted}[
 frame=single]{js}
-1.647618039090564
+2.947463651066849
 \end{minted}
 
 \subsection{Lista de coautores de un autor.}
@@ -346,9 +357,17 @@ db.authors.aggregate([
       as: "incollections_detail"
     }
   },
+  {$lookup:
+    {
+      from: "inproceedings",
+      localField: "inproceedings._id",
+      foreignField: "_id",
+      as: "inproceedings_detail"
+    }
+  },
   {$project:{
       _id : 1,
-      authors_detail : { $concatArrays: [ "$articles_detail", "$incollections_detail" ] }
+      authors_detail : { $concatArrays: [ "$articles_detail", "$incollections_detail", "$inproceedings_detail" ] }
     } 
   },
   {$project: {
@@ -388,46 +407,63 @@ frame=single]{js}
 /* 1 */
 {
     "coauthors" : [ 
-        "Hung T. Nguyen 0002", 
-        "Seetharami R. Seelam", 
-        "Roberto A. Osegueda", 
-        "Wei-Yen Wang", 
-        "Vladik Kreinovich", 
-        "Cheng-Yuan Yang", 
-        "Sun-Yuan Kung", 
-        "Yao-Chu Hsueh", 
-        "Ana C. Holguin", 
-        "Yung-Chih Liu", 
-        "Chien-Ming Wang", 
-        "Meng-Cheng Yang", 
-        "Wiley E. Thompson", 
-        "Rustom Mamlook", 
-        "Y. C. Chen", 
-        "Chen-Chia Chuang", 
-        "Huei-Rong Chen", 
-        "Chunlin Chen", 
-        "Yeong-Hwa Chang", 
-        "Chen-Guan Chang", 
-        "Chia-Wen Chang", 
-        "Jin-Shiuh Taur", 
-        "J. H. Chang", 
-        "C. L. Tsai", 
-        "Mei-Lang Chan", 
-        "Heng-Yi Lin", 
-        "Chien-Chou Chen", 
-        "U. S. Chen", 
-        "Chin-Wang Tao", 
-        "Shun-Feng Su", 
-        "Chung-Chih Tsai", 
-        "Chia-Chu Hsu", 
-        "Chih-Ching Hsiao", 
-        "C. M. Wang", 
-        "Ching-Wen Yang", 
-        "Tsu-Tian Lee", 
-        "Gwo-Her Lee", 
-        "Hung-Wei Lin", 
+        "T. H. Su", 
+        "W. C. Cheng", 
+        "C. C. Tsai", 
+        "Meng-Hua Lai", 
+        "W. Z. Chen", 
+        "Po-Chun Wang", 
+        "Song-Shyong Chen", 
+        "Wen-Rong Xiao", 
+        "Tzuen Wuu Hsieh", 
         "Jin-Tsong Jeng", 
-        "Tzuen Wuu Hsieh"
+        "Hung-Wei Lin", 
+        "Gwo-Her Lee", 
+        "Tsu-Tian Lee", 
+        "Ching-Wen Yang", 
+        "Chia-Chu Hsu", 
+        "Ze-Si Huang", 
+        "Chung-Chih Tsai", 
+        "Chin-Wang Tao", 
+        "Min Da Nian", 
+        "Chien-Chou Chen", 
+        "Heng-Yi Lin", 
+        "Mei-Lang Chan", 
+        "C. L. Tsai", 
+        "Jin-Shiuh Taur", 
+        "Jyun-Long Wu", 
+        "Chia-Wen Chang", 
+        "Chen-Guan Chang", 
+        "Chen-Chien J. Hsu", 
+        "Yeong-Hwa Chang", 
+        "Chunlin Chen", 
+        "Ching Ho Chi", 
+        "Huei-Rong Chen", 
+        "Chen-Chia Chuang", 
+        "W. Y. Wang", 
+        "Shun-Feng Su", 
+        "Yi-Fang Chen", 
+        "Rustom Mamlook", 
+        "Meng-Cheng Yang", 
+        "J. H. Chang", 
+        "Y. C. Chen", 
+        "Chien-Ming Wang", 
+        "Yung-Chih Liu", 
+        "U. S. Chen", 
+        "Ana C. Holguin", 
+        "Yao-Chu Hsueh", 
+        "Sun-Yuan Kung", 
+        "Cheng-Yuan Yang", 
+        "C. M. Wang", 
+        "Vladik Kreinovich", 
+        "Wei-Yen Wang", 
+        "Chih-Ching Hsiao", 
+        "Roberto A. Osegueda", 
+        "Seetharami R. Seelam", 
+        "Yi-Hsing Chien", 
+        "Wiley E. Thompson", 
+        "Hung T. Nguyen 0002", 
+        "Ru-Yu Hou"
     ]
 }
 \end{minted}
@@ -532,7 +568,7 @@ Como resultado obtenemos:
 
 \begin{minted}[
 frame=single]{js}
-999264
+1503034
 \end{minted}
 
 \subsection{Porcentaje de publicaciones en revistas con respecto al total de publicaciones.}
@@ -552,7 +588,7 @@ Como resultado obtenemos:
 
 \begin{minted}[
 frame=single]{js}
-49.15410131860515
+43.67313322575196
 \end{minted}
 
 
