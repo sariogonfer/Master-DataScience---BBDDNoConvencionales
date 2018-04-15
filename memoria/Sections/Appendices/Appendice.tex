@@ -7,26 +7,129 @@ En nuestro caso, hemos creado la vista \textit{publications\_extended}. Esta vis
 \begin{minted}[
 frame=single]{js}
 db.createView (
-<<<<<<< HEAD
   "publications_extended",
   "authors",
   [
     { $lookup: { 
       from: "articles", localField: "articles._id",
-	foreignField: "_id", as: "articles_extended" } },
+    foreignField: "_id", as: "articles_extended" } },
     { $lookup: { 
       from: "incollections", localField: "incollections._id", 
-	foreignField: "_id", as: "incollections_extended" } },
+    foreignField: "_id", as: "incollections_extended" } },
     { $lookup: { 
       from: "inproceedings", localField: "inproceedings._id",
-	foreignField: "_id", as: "inproceedings_extended" } },
+    foreignField: "_id", as: "inproceedings_extended" } },
     { $project: { 
       articles_extended: 1, incollections_extended: 1,
-	inproceedings_extended: 1}}
+    inproceedings_extended: 1}}
   ]
 )
 \end{minted}
 
+Una vez más, comprobamos que se ha ejecutado el comando correctamente:
+
+\begin{minted}[
+frame=single]{js}
+/* 1 */
+{
+    "ok" : 1.0
+}
+\end{minted}
+
+A partir de este momento, ya se puede ejecutar cualquier consulta a la vista como si de una tabla se tratase. Por ejemplo, podemos ejecutar la consulta del ejercicio 1, \textit{Listado de todas las publicaciones de un autor determinado}:
+
+
+\begin{minted}[
+frame=single]{js}
+db.publications_extended.aggregate([
+    { $match : { _id : "Chin-Wang Tao" } },
+    { $project: {publication: {$concatArrays:
+        ["$articles_extended.title", "$incollections_extended.title", "$inproceedings_extended.title"]}}
+    }
+])
+\end{minted}
+
+Como resultado, obtenemos el mismo resultado (aunque el orden puede variar):
+
+\begin{minted}[
+frame=single]{js}
+/* 1 */
+{
+    "_id" : "Chin-Wang Tao",
+    "publication" : [ 
+        "On the robustness of stability of fuzzy control systems.", 
+        "Adaptive fuzzy PIMD controller for systems with uncertain deadzones.", 
+        "Design and analysis of region-wise linear fuzzy controllers.", 
+        "Adaptive Fuzzy Switched Swing-Up and Sliding Control for the Double-Pendulum-and-Cart System.", 
+        "An Approximation of Interval Type-2 Fuzzy Controllers Using Fuzzy Ratio Switching Type-1 Fuzzy Controllers.", 
+        "Adaptive fuzzy terminal sliding mode controller for linear systems with mismatched time-varying uncertainties.", 
+        "A reduction approach for fuzzy rule bases of fuzzy controllers.", 
+        "Fuzzy Sliding-Mode Formation Control for Multirobot Systems: Design and Implementation.", 
+        "Segmentation of Psoriasis Vulgaris Images Using Multiresolution-Based Orthogonal Subspace Techniques.", 
+        "Fuzzy control for linear plants with uncertain output backlashes.", 
+        "Iris Recognition Using Possibilistic Fuzzy Matching on Local Features.", 
+        "Radial Basis Function Networks With Linear Interval Regression Weights for Symbolic Interval Data.", 
+        "Adaptive fuzzy sliding mode controller for linear systems with mismatched time-varying uncertainties.", 
+        "Design of fuzzy controllers with adaptive rule insertion.", 
+        "Flexible complexity reduced PID-like fuzzy controllers.", 
+        "Interval competitive agglomeration clustering algorithm.", 
+        "Fuzzy sliding-mode control for ball and beam system with fuzzy ant colony optimization.", 
+        "Hybrid robust approach for TSK fuzzy modeling with outliers.", 
+        "Design of a Fuzzy Controller With Fuzzy Swing-Up and Parallel Distributed Pole Assignment Schemes for an Inverted Pendulum and Cart System.", 
+        "Nested design of fuzzy controllers with partial fuzzy rule base.", 
+        "Fuzzy hierarchical swing-up and sliding position controller for the inverted pendulum-cart system.", 
+        "Design of a parallel distributed fuzzy LQR controller for the twin rotor multi-input multi-output system.", 
+        "Fuzzy adaptive approach to fuzzy controllers with spacial model.", 
+        "Simplified type-2 fuzzy sliding controller for wing rock system.", 
+        "Unsupervised fuzzy clustering with multi-center clusters.", 
+        "An advanced fuzzy controller.", 
+        "A Novel Approach to Implement Takagi-Sugeno Fuzzy Models.", 
+        "Fuzzy Swing-Up and Fuzzy Sliding-Mode Balance Control for a Planetary-Gear-Type Inverted Pendulum.", 
+        "A Design of a DC-AC Inverter Using a Modified ZVS-PWM Auxiliary Commutation Pole and a DSP-Based PID-Like Fuzzy Control.", 
+        "Robust fuzzy control for a plant with fuzzy linear model.", 
+        "Comments on \"Reduction of fuzzy rule base via singular value decomposition\".", 
+        "A Novel Fuzzy-Sliding and Fuzzy-Integral-Sliding Controller for the Twin-Rotor Multi-Input-Multi-Output System.", 
+        "Robust L", 
+        "A Fuzzy Logic Approach to Target Tracking", 
+        "Index compression for vector quantisation using modified coding tree assignment scheme.", 
+        "Hybrid SVMR-GPR for modeling of chaotic time series systems with noise and outliers.", 
+        "Parallel Distributed Fuzzy Sliding Mode Control for Nonlinear Mismatched Uncertain Systems.", 
+        "An approach for the robustness comparison between piecewise linear ", 
+        "Interval fuzzy sliding-mode formation controller design.", 
+        "Simplification of a fuzzy mechanism with rule combination.", 
+        "Robust control of systems with fuzzy representation of uncertainties.", 
+        "Checking identities is computationally intractable NP-hard and therefore human provers will always be needed.", 
+        "A kernel-based core growing clustering method.", 
+        "An Alternative Type Reduction Approach Based on Information Combination with Interval Operations for Interval-Valued Fuzzy Sliding Controllers.", 
+        "Designs and analyses of various fuzzy controllers with region-wise linear PID subcontrollers.", 
+        "Adaptive Bound Reduced-Form Genetic Algorithms for B-Spline Neural Network Training.", 
+        "A New Neuro-Fuzzy Classifier with Application to On-Line Face Detection and Recognition.", 
+        "Statistical and Dempster-Shafer Techniques in Testing Structural Integrity of Aerospace Structures.", 
+        "Embedded support vector regression on Cerebellar Model Articulation Controller with Gaussian noise.", 
+        "Iris Recognition Using Gabor Filters and the Fractal Dimension.", 
+        "A two-stage design of adaptive fuzzy controllers for time-delay systems with unknown models.", 
+        "Errata: Iris recognition using Gabor filters optimized by the particle swarm algorithm.", 
+        "Texture classification using a fuzzy texture spectrum and neural networks.", 
+        "Iris recognition using Gabor filters optimized by the particle swarm algorithm.", 
+        "iPhone as Multi-CAM and Multi-viewer.", 
+        "Sliding control for linear uncertain systems.", 
+        "FPGA implementation of improved ant colony optimization algorithm for path planning.", 
+        "Medical image compression using principal component analysis.", 
+        "Design of a Kinect Sensor Based Posture Recognition System.", 
+        "A simplified interval type-2 fuzzy CMAC.", 
+        "iOS based Multi-Cloud Manage System.", 
+        "A Novel Approach to Implement Takagi-Sugeno Fuzzy Models.", 
+        "Path-planning using the behavior cost and the path length with a multi-resolution scheme.", 
+        "Iris recognition using Gabor filters optimized by the particle swarm technique.", 
+        "Hybrid robust LS-SVMR with outliers for MIMO system.", 
+        "Design of A Two-Stage Adaptive Fuzzy Controller.", 
+        "Face Detection Using Eigenface and Neural Network.", 
+        "Robust control of the mismatched systems with the fuzzy integral sliding controller.", 
+        "Support Vector Regression for Controller Approximation.", 
+        "Robust clustering algorithm for the symbolic interval-values data with outliers."
+    ]
+}
+\end{minted}
 
 \section{Parseador de XML a JSON}\label{sec:parser}
 
