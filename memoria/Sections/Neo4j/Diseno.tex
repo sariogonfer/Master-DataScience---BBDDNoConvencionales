@@ -14,7 +14,7 @@ Para nuestro diseño, vamos a guardar cada publicación en un nodo, al que se le
 
 Solo tendremos un tipo de relación, \textbf{:WRITED}, y que se dara entre el nodo de un autor y el nodo de una publicación, en la dirección del primero al segundo.
 
-Por último, comentar los índices que se van a definir. Neo4J permite definir índices sobre los atributos de un nodo, de forma análoga a los índices que podemos definir sobre columnas en otras \gls{BBDD}. Nosotros vamos a definir un índicir sobre el atributo \textbf{year} de las publicaciones, lo cuál, acelerará la ejecución de las queries que hagan uso de este atributo.
+Por último, comentar los índices que se van a definir. Neo4J permite definir índices sobre los atributos de un nodo, de forma análoga a los índices que podemos definir sobre columnas en otras \gls{BBDD}. Nosotros vamos a definir un índice sobre el atributo \textbf{year} de las publicaciones, lo cuál, acelerará la ejecución de las queries que hagan uso de este atributo. Haremos lo mismo sobre el atributo \textbf{name} de los autores.
 
 Otra opción hubiera sido almacenar los años como si fueran nodos y crear una relación entre ellos y las publicaciones. Estos nodos tendrían una gran cantidad de relaciones con nodos de publicaciones asociadas. Para evitar esto, hemos optado por hacer uso de los índices y considerar este año como un atributo de la publicación.
 
@@ -25,14 +25,14 @@ La carga de datos se ha hecho a partir del mismo fichero \gls{XML} que contabamo
 Antes de explicar como se ha realizado esta carga, quisieramos comentar que uno de los problemas con el que nos hemos encontrados, y que más dolores de cabeza nos ha dado ha sido precisamente la carga de los datos. Las herramientas con las que cuenta Neo4J para realizar esta carga tienen ciertas limitaciones que pueden ser un problema, a saber:
 
 \begin{itemize}
- \item La carga de dato mediante Cypher utilizando el comando \gls{LOAD CSV} es extremadamente lento cuando tratamos como varios millones de items, como es nuestro caso.
- \item La herramienas por línea de comandos \textit{neo4j-admin}, con su opción \gls{import}, nos obliga a borrar, si existe, el grafo donde queramos guardar los datos. Además, es susceptible a errores, y en caso de no poder procesar algun dato, detiene por completo el proceso.
+ \item La carga de dato mediante Cypher utilizando el comando \textit{LOAD CSV} es extremadamente lento cuando tratamos como varios millones de items, como es nuestro caso.
+ \item La herramienas por línea de comandos \textit{neo4j-admin}, con su opción \textit{import}, nos obliga a borrar, si existe, el grafo donde queramos guardar los datos. Además, es susceptible a errores, y en caso de no poder procesar algun dato, detiene por completo el proceso.
 \end{itemize}
 
 Así pués, para realizar la carga de nuestros datos, realizamos los siguientes pasos:
 
 \begin{enumerate}
- \item Procesamos el fichero \gls{XML} para obtener los datos en formato \gls{CSV}. Para ello ejecutamos el script \textit{xml_to_neo4j.py}. Este script realiza las siguientes acciones:
+ \item Procesamos el fichero \gls{XML} para obtener los datos en formato \gls{CSV}. Para ello ejecutamos el script \textit{xml\_to\_neo4j.py}. Este script realiza las siguientes acciones:
  \begin{enumerate}
   \item Lee el fichero \gls{XML} original y crea a partir de él, un fichero temporal con los caracteres conflictivos escapados y correctamente codificados.
   \item A partir de este fichero temporal, genera una tres \gls{datasets} dferentes, compuesto cada uno de ellos por multiples ficheros \gls{CSV}, a saber:

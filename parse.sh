@@ -16,10 +16,3 @@ echo -e "${GREEN}>  Generado json/incollections.json${NC}"
 cat json/inproceedings/part-* > json/inproceedings.json
 echo -e "${GREEN}>  Generado json/inproceedings.json${NC}"
 
-echo -e "${GREEN}Agrupando csv de carga de Neo4j...${NC}"
-cat csv/authors/part-* > csv/authors.csv
-echo -e "${GREEN}>  Generado csv/authors.json${NC}"
-cat csv/publications/part-* > csv/publications.csv
-echo -e "${GREEN}>  Generado csv/publications.json${NC}"
-cat csv/rels/part-* > csv/rels.csv﻿
-echo -e "${GREEN}>  Generado csv/rels.json${NC}"

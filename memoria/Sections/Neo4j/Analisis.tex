@@ -1,54 +1,54 @@
-\section{Sección}
+\section{Análisis}
 
-\lipsum[1]
+Para este análisis vamos a realizar alguna de las consultas que ya hicimos en MongoDB y así podremos comparar ambas \gls{BBDD}.
 
-\subsection{Algunas cosillas}
+\subsection{Listado de todas las publicaciones de un autor determinado.}
 
-
-\subsubsection{Referencias}
-
-Para referenciar a una palabra del glosario
-
-\glsfirst{JDK} \\
-\gls{APK} \\
-\gls{JDK} \\
-\cite{AngBenNadel}
-
-\subsubsection{Imagen}
-
-\begin{figure}[H]
-\centering
-  \includegraphics[width=\textwidth]{Figures/ch1/introduction/os_quota}
-  \caption{Pie de imagen. }
-\end{figure}
-
-\subsubsection{Código}
-
-Bash
-
+En primer lugar, vamos a hacer una busqueda de las publicaciones realizadas por un autor en concreto. Para esta busqueda, haremos un filtrado de los nodos que pertenezcan al subgrafo de autores, \textit{:Author}, y sobre estos filtraremos utilizando el atributo \gls{name} de estos nodos. Con esto tendremos el nodo del autor. A partir de este nodo, y siguiendo las relaciones de tipo \textit{:Writed} que tiene definidas como si de un camino se tratase, llegaremos a las publicaciones de este autor.
 
 \begin{minted}[
-frame=lines,
-linenos
-]{bash}
-    cd
-    ls
-    echo "Hello World"
+frame=single]{sql}
+MATCH (:Author {name: 'Chin-Wang Tao'})-[:Writed]->(p:Publication)
+RETURN p.title
 \end{minted}
 
-Python
+Podemos coparar el efecto de aplicar un índice sobre este campo:
 
+\begin{itemize}
+ \item Sin índice: 1620 ms
+ \item Con índice: 80 ms
+\end{itemize}
+
+
+\subsection{Número de artículos en revistas para el año 2017.}
+
+Para este caso necesitaremos hacer una agregación. En el caso de Cypher, no contamos con un framework de agregación tan flexible como el que nos ofrece MongoDB, pero aun así podemos realizar ciertas agregaciones. Para poder contar el número de articulos publicados en 2017, filtraremos los nodos pertenecientes al subgrafo \textit{:Article} utilizando el atributo \textit{year}. A continuación utilizamos la funcion \textbf{count()} para contar el número de estos.
 
 \begin{minted}[
-frame=lines,
-linenos
-]{python}
-import os
-class HelloWorld:
-    msg = "Hello World"
-    def __init__(self):
-        print(self.msg)
-
-if __name__ == '__main__':
-    HelloWorld()	
+frame=single]{sql}
+MATCH (p:Article {year: 2017})
+RETURN count(p)
 \end{minted}
+
+Como en el caso anterior, comparamos los tiempos de carga con y sin índice:
+
+\begin{itemize}
+ \item Sin índice: 1160 ms
+ \item Con índice: 970 ms
+\end{itemize}
+
+En este caso el índice apenas tiene efecto ya que el número de posibles valores es muy pequeño en comparación al número de elementos.
+
+\subsection{Lista de coautores de un autor.}
+
+En esta consulta aprovecharemos la potencia de las \gls{BBDD} orientadas a grafos, las realaciones. Mientras que en MongoDB la query necesaria incluia realizar (en caso de no querer tener demasiados elementos anidados) múltiples operaciones con el framework de agregaciones, en Neo4j podemos obtener la misma información con una query mínima. 
+
+\begin{minted}[
+frame=single]{sql}
+MATCH (:Author {name: "Chin-Wang Tao"})-[:Writed]->(:Publication)<-[:Writed]-(c:Author)
+RETURN c.name
+\end{minted}
+
+POR SI ACASO TENEMO DATOS DE CUANTO TARDA EN MONGO:
+Started streaming 150 records after 2 ms and completed after 5 ms.
+
