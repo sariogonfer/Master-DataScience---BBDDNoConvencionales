@@ -1,106 +1,81 @@
-# -*- coding: utf-8 -*-
-from lxml import etree
-import os, sys
-from unidecode import unidecode
+import os
+import pyspark
+from tempfile import NamedTemporaryFile
+import html
+
+from pyspark.sql import SparkSession, functions
+from pyspark.sql.types import StringType, StructType, StructField, ArrayType
+from pyspark.sql.functions import explode, concat_ws, lit, translate
 
 
-#@func: fast_iter
-#@param context : iterparsed (chunk of xml) data
-#@param func : handler
-#@desc: Read xml chunk. After read, clear and delete chunk to release memory.
-#		Also, replace html encoding to similar ascii code
+#Cargamos el paquete de lectura de XML de databricks
+packages = "com.databricks:spark-xml_2.11:0.4.1"
 
-def fast_iter(context, func,*args, **kwargs):
-    collaborations = [u'www', u'phdthesis', u'inproceedings', u'incollection', u'proceedings', u'book', u'mastersthesis', u'article']
-    #xml categories
-    author_array = []
-    title = ''
+os.environ["PYSPARK_SUBMIT_ARGS"] = (
+    "--packages {0} pyspark-shell".format(packages)
+)
 
-    #read chunk line by line
-    #we focus author and title
-    for event, elem in context:
-        if elem.tag == 'author':
-            author_array.append(unidecode(elem.text))
 
-        if elem.tag == 'title':
-        	if elem.text:
-	        	title = unidecode(elem.text)
-
-        if elem.tag in collaborations:
-        	if len(author_array) is not 0 and title is not '':
-	        	#rejected paper has no author or title
-	        	#it should be check
-
-        		for a in author_array:
-        			func(a+"||"+title, *args, **kwargs)
-        			#write into kv file
-
-        		title = ''
-        		del author_array[:]
- 
-        elem.clear()
-        while elem.getprevious() is not None:
-            del elem.getparent()[0]
-    del context
-    #clear chunks
-
-def fast_iter2(context):
-    collaborations = [u'www', u'phdthesis', u'inproceedings', u'incollection', u'proceedings', u'book', u'mastersthesis', u'article']
-    #xml categories
-    article_array = {}
-    title = ''
-
-    counter = 0
-    counter_file = 0
-    fout = open('parsed_data_' + str(counter_file) + '.txt', 'w')
-	
-
-    #read chunk line by line
-    #we focus author and title
-    for event, elem in context:
-        if elem.tag == 'article':
-            print(article_array)
-            fout.write(str(article_array) + '\n')
-            del article_array
-               
-            counter += 1
-            
-            if (counter >= 100000):
-                fout.close()
-                counter = 0
-                counter_file += 1
-                fout = open('parsed_data_' + str(counter_file) + '.txt', 'w')
-            
-            article_array = {}
-            article_array['key'] = elem.attrib['key']
-            article_array['mdate'] = elem.attrib['mdate']
-        else:
-            article_array[elem.tag] = elem.text
-
-        elem.clear()
-        while elem.getprevious() is not None:
-            del elem.getparent()[0]
-            
-        
-    del context
+spark = (SparkSession.builder
+    .master("local[4]")
+    .config("spark.driver.cores", 1)
+    .appName("Getting graph information")
+    .getOrCreate() )
     
-    fout.write(str(article_array))
-    fout.close()
+sc = spark.sparkContext
 
-    #clear chunks
+schema = StructType([
+  StructField("_key", StringType()),
+  StructField("title", StringType()),
+  StructField("year", StringType()),
+  StructField("author", ArrayType(
+      StructType([
+          StructField("_VALUE", StringType())
+      ])
+   ))
+])
 
-#@func: process_element
-#@param elem : parsed data of chunk
-#@param fout : file name to write
-#@desc: It is handler to write content. just write content to file
-#def process_element(elem, fout):
-	#print ("writing ... " + elem)
-	#fout.write(elem)
-#	print >>fout, elem
+# El fichro tiene caracteres escapadas HTML (como &agrave;), por lo que es
+# necesario limpiarlo.
 
-if __name__ == "__main__":
-	context = etree.iterparse('dblp.xml', load_dtd=True,html=True)
-	#To use iterparse, we don't need to read all of xml.
-	fast_iter2(context)
-	
-	
+
+
+with open('./dblp.xml') as source, NamedTemporaryFile('w') as unescaped_src:
+    for line in source:
+        unescaped_src.write(html.unescape(line))
+
+    incollections_df = spark.read.format('com.databricks.spark.xml').option(
+        "rowTag", "incollection").option('charset', "UTF-8").schema(
+        schema).load(unescaped_src.name)
+    inproceedings_df = spark.read.format('com.databricks.spark.xml').option(
+        "rowTag", "inproceedings").option('charset',
+        "UTF-8").schema(schema).load(unescaped_src.name)
+    articles_df = spark.read.format('com.databricks.spark.xml').option("rowTag",
+        "article").option('charset', "UTF-8").schema(schema).load(
+        unescaped_src.name)
+        #ISO-8859-1
+        
+    #Almacenamos los jsons
+    incollections_df.write.option("charset", "UTF-8").json('./json/incollections')
+    inproceedings_df.write.option("charset", "UTF-8").json('./json/inproceedings')
+    articles_df.write.option("charset", "UTF-8").json('./json/articles')
+
+    #Agrupamos y almacenamos los csv
+    publications_df =   incollections_df.withColumn('LABEL',lit('Incollection')).union(
+                        inproceedings_df.withColumn('LABEL',lit('Inproceeding'))).union(
+                        articles_df.withColumn('LABEL', lit('Article')))
+
+    publications_df = publications_df.filter(publications_df._key.isNotNull())
+
+    publications_df.withColumn('id', translate('_key', '/', '_')).select('id',
+        'title', 'year', 'LABEL').write.option('escape', '"').csv(
+        './csv/publications')
+
+    publications_df.withColumn('_author', explode('author._VALUE')).select(
+        '_author').write.option('escape', '"').csv('./csv/authors')
+
+    publications_df.withColumn('start', explode('author._VALUE')).withColumn(
+        'end', translate('_key', '/', '_')).select('start', 'end').write.option(
+            'escape', '"').csv('./csv/rels')
+
+sc.stop()
