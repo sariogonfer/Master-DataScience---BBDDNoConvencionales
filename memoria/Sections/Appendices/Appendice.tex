@@ -131,54 +131,134 @@ frame=single]{js}
 }
 \end{minted}
 
-\section{Parseador de XML a JSON}\label{sec:parser}
+\section{Parseador de XML a JSON y CSV}\label{sec:parser}
 
-Para realizar el parseo de los datos hemos decidido hacer uso de PySpark para aprovechar la gestión de la memoria que hace. ¿Por qué de esta decisión?. Intentar procesar el fichero \gls{XML} directamente con un script de Python provocaba que las máquinas donde se ejecuba acabaran bloqueandose debido a que se llegaba al límite de la capacidad de la memoria, y por lo que se ha podido comprobar, los paquetes encargados de este parseo no gestionan correctamente estos escenarios.
+Para realizar el parseo de los datos hemos decidido hacer uso de la biblioteca pyspark sobre Python 3 para aprovechar la gestión de la memoria que hace. ¿Por qué de esta decisión?. Intentar procesar el fichero \gls{XML} directamente con un script de Python sin uso de la gestión de memoria de las bibliotecas nativas de Spark provocaba que las máquinas donde se ejecuba acabaran bloqueandose debido a que se llegaba al límite de la capacidad de la memoria, y por lo que se ha podido comprobar, los paquetes encargados de este parseo no gestionan correctamente estos escenarios.
 
 Otra alternativa era dividir el fichero XML en bloques y procesarlos de manera individual. Así se reduce la carga de datos en memoria y se consigue no llegar al límite de la máquina. Esta técnica puede se más compleja ya que requiere leer el fichero línea a línea y procesarla para saber si podemos ``cortar'' sobre ella no separar un elemento valido (un \textit{articles} en dos bloques.
 
-Debido a la facilidad de uso que nos ofrece PySpark, y aprovechando que es conetenido de otra materia de este master, lo hemos visto como la opción más recomendable.
+Debido a la facilidad de uso que nos ofrece PySpark, y aprovechando que es contenido de otra materia de este master, lo hemos visto como la opción más recomendable.
 
 \subsection{Pasos}
 
-Para leer el XML abrimos una shell de pyspark con el paquete de java spark-xml:
+Para leer el XML simplemente debemos ejecutar el script adjunto parser.py. En primer lugar, hemos definido las bibliotecas necesarias a utilizar:
+
+\begin{minted}[
+frame=single]{python}
+import os
+import pyspark
+from tempfile import NamedTemporaryFile
+import html
+
+from pyspark.sql import SparkSession, functions
+from pyspark.sql.types import StringType, StructType, StructField, ArrayType
+from pyspark.sql.functions import explode, concat_ws, lit, translate
+\end{minted}
+ 
+
+En segundo lugar, hemos definido el uso de la biblioteca externa de parseo de xml. Para ello, debemos modificar la variable de entorno PYSPARK_SUBMIT_ARGS:
+
+\begin{minted}[
+frame=single]{python}
+packages = "com.databricks:spark-xml_2.11:0.4.1"
+
+os.environ["PYSPARK_SUBMIT_ARGS"] = (
+    "--packages {0} pyspark-shell".format(packages)
+)
+\end{minted}
+
+Una vez definida la variable de entorno, inicializamos la variable sc, que contendrá de aquí en adelante el SparkContext, objeto necesario para gestionar las llamadas en Spark. Además, definimos el esquema que nos vamos a encontrar mediante la tipología de datos de cada campo:
+
+\begin{minted}[
+frame=single]{python}
+spark = (SparkSession.builder
+    .master("local[4]")
+    .config("spark.driver.cores", 1)
+    .appName("Getting graph information")
+    .getOrCreate() )
+    
+sc = spark.sparkContext
+\end{minted}
+
+Al no tener un esquema definido, es el propio paquete de \textbf{Spark} el que intenta inferirlo por si mismo. Esto causa problemas al intentar parsear algunos campos. Por ello lo mejor es definir nuestro propio esquema definiendo todos los campos como si se tratasen de ``Strings''. Ya que solo utilizamos este dataframe para transformar el \textit{XML} a \textit{JSON} y \textit{CSV}, y no vamos a realizar ningún tipo de validación u operación con el \textbf{Datafame} que se crea, tratar todos los campos como ``Strings'' es más que suficiente.
+
+\begin{minted}[
+frame=single]{python}
+schema = StructType([
+  StructField("_key", StringType()),
+  StructField("title", StringType()),
+  StructField("year", StringType()),
+  StructField("author", ArrayType(
+      StructType([
+          StructField("_VALUE", StringType())
+      ])
+   ))
+])
+\end{minted}
+
+Una vez definido, procedemos a abrir el fichero dblp.xml y almacenamos eliminando caracteres de escape en html cada línea en un fichero temporal.
+
+\begin{minted}[
+frame=single]{python}
+with open('./dblp.xml') as source, NamedTemporaryFile('w') as unescaped_src:
+    for line in source:
+        unescaped_src.write(html.unescape(line))
+\end{minted}
+        
+        
+Posteriormente, recuperamos cada tipo de ejecución mediante el siguiente mandato:
+
+\begin{minted}[
+frame=single]{python}
+incollections_df = spark.read.format('com.databricks.spark.xml').option(
+        "rowTag", "incollection").option('charset', "UTF-8").schema(
+        schema).load(unescaped_src.name)
+inproceedings_df = spark.read.format('com.databricks.spark.xml').option(
+        "rowTag", "inproceedings").option('charset',
+        "UTF-8").schema(schema).load(unescaped_src.name)
+articles_df = spark.read.format('com.databricks.spark.xml').option("rowTag",
+        "article").option('charset', "UTF-8").schema(schema).load(
+        unescaped_src.name)
+\end{minted}
+        
+Una vez cargados los DataFrames en función de la tipología de publicación, volcamos cada tipo en 3 ficheros json para la carga desde mongoimport:
+
+
+\begin{minted}[
+frame=single]{python}
+incollections_df.write.option("charset", "UTF-8").json('./json/incollections')
+inproceedings_df.write.option("charset", "UTF-8").json('./json/inproceedings')
+articles_df.write.option("charset", "UTF-8").json('./json/articles')
+\end{minted}
+
+Por último, para la carga de datos en Neo4j vamos a generar 3 ficheros CSV, el primero de ellos con todas las publicaciones, el segundo con todos los autores y el tercero con todas las relaciones entre ellos:
+
+\begin{minted}[
+frame=single]{python}
+publications_df =   incollections_df.withColumn('LABEL',lit('Incollection')).union(
+                    inproceedings_df.withColumn('LABEL',lit('Inproceeding'))).union(
+                    articles_df.withColumn('LABEL', lit('Article')))
+
+publications_df = publications_df.filter(publications_df._key.isNotNull())
+
+publications_df.withColumn('id', translate('_key', '/', '_')).select('id',
+    'title', 'year', 'LABEL').write.option('escape', '"').csv(
+    './csv/publications')
+
+publications_df.withColumn('_author', explode('author._VALUE')).select(
+    '_author').write.option('escape', '"').csv('./csv/authors')
+
+publications_df.withColumn('start', explode('author._VALUE')).withColumn(
+    'end', translate('_key', '/', '_')).select('start', 'end').write.option(
+        'escape', '"').csv('./csv/rels')
+\end{minted}
+
+
+Hemos encapsulado la ejecución de este script mediante simplemente la ejecución del script adjunto "parse.sh" mediante su ejecución:
 
 \begin{minted}[
 frame=single]{js}
-pyspark --packages com.databricks:spark-xml_2.11:0.4.1
+./parse.sh
 \end{minted}
 
-Desde pyspark ejutamos para cada tipo de publicación el siguiente mandato:
-
-\begin{minted}[
-frame=single]{python}
-df = spark.read.format('com.databricks.spark.xml').option("rowTag",
-  "incollection").load('./dblp.xml')
-\end{minted}
-
-Al no tener un esquema definido, es el propio paquete de \textbf{Spark} el que intenta inferirlo por si mismo. Esto causa problemas al intentar parsear algunos campos. Por ello lo mejor es definir nuestro propio esquema definiendo todos los campos como si se tratasen de ``Strings''. Ya que solo utilizamos este dataframe para transformar el \textit{XML} a \textit{JSON}, y no vamos a realizar ningún tipo de validación u operación con el \textbf{Datafame} que se crea, tratar todos los campos como ``Strings'' es más que suficiente.
-
-\begin{minted}[
-frame=single]{python}
-from pyspark.sql.types import StructField, StringType, StructType
-
-custom_types = []
-for c in df.columns[1:]:
-  custom_types.append(StructField(str(c), StringType(), nullable=True))
-
-custom_schema = StructType(custom_types)
-\end{minted}
-
-Una vez que tengamos creado el \textbf{DataFrame}, solo nos quedará volcarlo como fichero, o más bien, como múltiples ficheros, ya que por el mecanismo interno de funcionamiento de Spark, la salida sera escrita en múltiples ficheros. Tendremos por tanto que indicarla a la función \textit{json()} el directorio donde queremos que vuelque estos ficheros.
-
-\begin{minted}[
-frame=single]{python}
-df.write.json('./incollection')
-\end{minted}
-
-Una vez terminado, nos encontrameros que dentro del directorio anterior, se han creado varios ficheros cuyos nombres tiene el formato \textit{PARTXXXXX\_\*.json}. Para unirlo todos en uno solo (en caso de querer hacerlo), podemos usar las \textbf{tools} básicas que nos ofrece el ofrece el sistema operativo, en nuestro caso, una distribución basada en \textbf{Debian}:
-
-\begin{minted}[
-frame=single]{bash}
-cat PART* > out.json
-\end{minted}
+Ese fichero eliminará los directorios donde se almacenarán los ficheros de salida, ejecutará el script y agrupará los ficheros temporales \textit{json} en un fichero completo por cada tipología. Para el caso de \textit{CSV}, no ha sido necesario agrupar puesto que en la importación a neo4j indicamos que se recuperen todos los ficheros part-* (ficheros generados por spark).

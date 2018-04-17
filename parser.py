@@ -15,7 +15,6 @@ os.environ["PYSPARK_SUBMIT_ARGS"] = (
     "--packages {0} pyspark-shell".format(packages)
 )
 
-
 spark = (SparkSession.builder
     .master("local[4]")
     .config("spark.driver.cores", 1)
@@ -37,9 +36,6 @@ schema = StructType([
 
 # El fichro tiene caracteres escapadas HTML (como &agrave;), por lo que es
 # necesario limpiarlo.
-
-
-
 with open('./dblp.xml') as source, NamedTemporaryFile('w') as unescaped_src:
     for line in source:
         unescaped_src.write(html.unescape(line))
@@ -53,7 +49,6 @@ with open('./dblp.xml') as source, NamedTemporaryFile('w') as unescaped_src:
     articles_df = spark.read.format('com.databricks.spark.xml').option("rowTag",
         "article").option('charset', "UTF-8").schema(schema).load(
         unescaped_src.name)
-        #ISO-8859-1
         
     #Almacenamos los jsons
     incollections_df.write.option("charset", "UTF-8").json('./json/incollections')
