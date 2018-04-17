@@ -52,3 +52,16 @@ RETURN c.name
 POR SI ACASO TENEMO DATOS DE CUANTO TARDA EN MONGO:
 Started streaming 150 records after 2 ms and completed after 5 ms.
 
+\subsection{Edad de los 5 autores con el periodo de publicaciones más largo.}
+
+Ahora vamos a intentar realizar una consulta menos amistosa para nuestra \gls{BBDD}.
+
+\begin{minted}[
+frame=single]{sql}
+MATCH (a:Author)-[:Writed]->(p:Publication)
+WITH a, max(p.year) - min(p.year) as age
+RETURN a.name, age
+ORDER BY age DESC LIMIT 5
+\end{minted}
+
+Aunque la consulata a priori parece secilla, incluso más que la que usamos en MongoDB, el tiempo de ejecución y la carga que le supone a la máquina es signifcativamente mayor, llegando ingluso a desbordar la memoria.
