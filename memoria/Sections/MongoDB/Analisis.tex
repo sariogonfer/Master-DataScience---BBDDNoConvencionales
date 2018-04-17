@@ -367,7 +367,8 @@ db.authors.aggregate([
   },
   {$project:{
       _id : 1,
-      authors_detail : { $concatArrays: [ "$articles_detail", "$incollections_detail", "$inproceedings_detail" ] }
+      authors_detail : { $concatArrays: [ "$articles_detail", "$incollections_detail",
+					  "$inproceedings_detail" ] }
     } 
   },
   {$project: {

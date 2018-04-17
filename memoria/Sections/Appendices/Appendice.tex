@@ -44,7 +44,8 @@ frame=single]{js}
 db.publications_extended.aggregate([
     { $match : { _id : "Chin-Wang Tao" } },
     { $project: {publication: {$concatArrays:
-        ["$articles_extended.title", "$incollections_extended.title", "$inproceedings_extended.title"]}}
+        ["$articles_extended.title", "$incollections_extended.title",
+         "$inproceedings_extended.title"]}}
     }
 ])
 \end{minted}
@@ -52,7 +53,7 @@ db.publications_extended.aggregate([
 Como resultado, obtenemos el mismo resultado (aunque el orden puede variar):
 
 \begin{minted}[
-frame=single]{js}
+frame=single, breaklines]{js}
 /* 1 */
 {
     "_id" : "Chin-Wang Tao",
@@ -156,7 +157,7 @@ from pyspark.sql.functions import explode, concat_ws, lit, translate
 \end{minted}
  
 
-En segundo lugar, hemos definido el uso de la biblioteca externa de parseo de xml. Para ello, debemos modificar la variable de entorno PYSPARK_SUBMIT_ARGS:
+En segundo lugar, hemos definido el uso de la biblioteca externa de parseo de xml. Para ello, debemos modificar la variable de entorno PYSPARK\_SUBMIT\_ARGS:
 
 \begin{minted}[
 frame=single]{python}
