@@ -24,4 +24,16 @@ Cada uno de estos documentos contiene la información sobre los tres tipos de pu
  \item Incollections.
 \end{itemize}
 
+En nuestro caso, hemos hecho uso de una base de datos MongoDB encapsulada en un contenedor docker. Es posible realizarlo mediante una instalación nativa sobre linux pero hemos preferido la otra opción. Si se desea utilizar el mismo contenedor que hemos utilizado en nuestro caso, basta con ejecutar el siguiente comando:
 
+\begin{minted}[
+frame=single]{js}
+sudo docker run --name practica-bbdd-mongo -d -p 27017:27017 mongo
+\end{minted}
+
+Una vez lanzado el comando indicado, para volver a arrancar el contenedor basta con ejecutar el comando start con el nombre del contenedor creado:
+
+\begin{minted}[
+frame=single]{js}
+sudo docker start practica-bbdd-mongo
+\end{minted}

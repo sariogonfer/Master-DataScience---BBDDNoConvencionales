@@ -80,11 +80,22 @@ Los datos han sido cargados usando la herramienta \textbf{mongoimport}. Esta her
 
 Para cargar nuestros datos se han ejecutado los siguientes comandos:
 
-\begin{minted}[]{bash}
+\begin{minted}[
+frame=single]{js}
 mongoimport --db=dblp --collection=articles json/articles.json
+\end{minted}
+
+\begin{minted}[
+frame=single]{js}
 mongoimport --db=dblp --collection=incollections json/incollections.json
+\end{minted}
+
+\begin{minted}[
+frame=single]{js}
 mongoimport --db=dblp --collection=inproceedings json/inproceedings.json
 \end{minted}
+
+\textbf{NOTA}: Para facilitar su ejecución, hemos encapsulado sendas ejecuciones sobre un script: "import.sh".
 
 Una vez cargado, para comenzar a ejecutar comandos y queries sobre nuestros datos, debemos indicar la bbdd que vamos a utilizar, en nuestro caso "dblp", que es la que hemos indicado en los comandos de mongoimport. Lo indicamos mediante el comando siguiente:
 
