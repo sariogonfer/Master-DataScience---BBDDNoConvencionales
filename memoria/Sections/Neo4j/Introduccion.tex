@@ -1,54 +1,23 @@
-\section{Sección}
+\section{Neo4J}
 
-\lipsum[1]
+En esta segunda parte vamos a utilizar los mismos datos sobre publicaciones, pero en este caso, vamos a utilizar una \gls{BBDD} orientada a grafos. Este tipo de \gls{BBDD} se engloba dentro de las \gls{BBDD} NoSQL. Este tipo de \gls{BBDD} son útiles cuado lo que nos importa son la relaciones entre las entidades que guardamos. 
 
-\subsection{Algunas cosillas}
+Así como MongoDB es la \gls{BBDD} NoSQL más importante en cuanto a terminos de uso, podemos decir que \textbf{Neo4J} es la  principal \gls{BBDD} orientadas a grafos.
 
+En Neo4J podemos definir:
 
-\subsubsection{Referencias}
+\begin{itemize}
+ \item Nodos: Serían los elementos ue conforman nuestros nuestros datos. Estos elementos pueden tener definidos una serie de atributos los cuales definen ciertas características de estos nodos. Algunos ejemplos de nodos pueden ser personas, empresas, productos, \ldots
+ \item Relaciones; Como su nombre indica, se trata del enlace, la relación, que unen dos nodos. Al igual que estos, pueden tener una serie de atributos definidos. Un ejemplo de estas relaciones puede ser la amistad entre una persona y otra, o la relación entre cliente y aquel que oferta un servicio. En el caso particular de Neo4J, estas ralaciones se definen de manera unidirecional, esto quiere decir que, el hecho de que el nodo X tenga una relación R con Y, no quiere decir que esta misma relación exista entre Y y X (es importante el orden). 
+\end{itemize}
 
-Para referenciar a una palabra del glosario
+Lo que tenemos de unir los elementos anteriores es un grafo. 
 
-\glsfirst{JDK} \\
-\gls{APK} \\
-\gls{JDK} \\
-\cite{AngBenNadel}
+Neo4J nos permite crear lo que se conoce como \textit{\:LABELS}. Estos \textit{\:LABLES} son asignados a los distintos nodos y podemos usarlos para crear subgrafos dentro de nuestro grafo. También podemos, como ocurre con otras \gls{BBDD}, crear índices  sobre cualquiera de los atributos que caracterizan a un nodo.
 
-\subsubsection{Imagen}
+Lo dicho en el parrafo anterior también se aplica a las \textit{relaciones}, pero en este caso, las \textit{\:LABELS} se les conoce como \textit{\:TYTES}
 
-\begin{figure}[H]
-\centering
-  \includegraphics[width=\textwidth]{Figures/ch1/introduction/os_quota}
-  \caption{Pie de imagen. }
-\end{figure}
-
-\subsubsection{Código}
-
-Bash
+Por último señalar que el lenguaje que se utiliza para realizar consultas sobre Neo4J se conoce como \textbf{Cypher}. Este lenguaje es muy parecido a \gls{SQL}, lo cual facilita su uso a aquellos acostumbrados a trabajar con \gls{BBDD} \gls{SQL}.
 
 
-\begin{minted}[
-frame=lines,
-linenos
-]{bash}
-    cd
-    ls
-    echo "Hello World"
-\end{minted}
 
-Python
-
-
-\begin{minted}[
-frame=lines,
-linenos
-]{python}
-import os
-class HelloWorld:
-    msg = "Hello World"
-    def __init__(self):
-        print(self.msg)
-
-if __name__ == '__main__':
-    HelloWorld()	
-\end{minted}

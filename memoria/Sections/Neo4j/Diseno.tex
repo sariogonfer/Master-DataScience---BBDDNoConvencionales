@@ -1,54 +1,52 @@
-\section{Sección}
+\subsection{Diseño}
 
-\lipsum[1]
+Como ya nos ocurría con MongoDB, aunque usa de las características de Neo4J es qeu se trata de una \gls{BBDD} \textit{schemaless}, es necesario diseñar la estructura con la que se guardarán los datos. 
 
-\subsection{Algunas cosillas}
+Como comentabamos en el apartado anterior, en Neo4J podemos definir \textit{nodos} y \textit{relaciones} entre estos nodos, caracterizar a estos mediante atributos y definir subgrados utilizando \textit{:LABELS o :TYPES}. 
+
+Para nuestro diseño, vamos a guardar cada publicación en un nodo, al que se le añadirán el resto de datos de la publicación como si fueran atributos. Con los autores haremos exactamente lo mismo. A estos nodos se les añadirán las siguientes \textit{:LABELS} según corresponda:
+
+\begin{itemize}
+ \item Author: A todos los nodos que almacenen la información de un autor.
+ \item Publication: A todos los nodos que representen una publicación sin importar el tipo.
+ \item Article / Inproceeding / Incollection: Estás \textit{LABELS} se asignarán según sea el tipo de publicación. 
+\end{itemize}
+
+Solo tendremos un tipo de relación, \textbf{:WRITED}, y que se dara entre el nodo de un autor y el nodo de una publicación, en la dirección del primero al segundo.
+
+Por último, comentar los índices que se van a definir. Neo4J permite definir índices sobre los atributos de un nodo, de forma análoga a los índices que podemos definir sobre columnas en otras \gls{BBDD}. Nosotros vamos a definir un índicir sobre el atributo \textbf{year} de las publicaciones, lo cuál, acelerará la ejecución de las queries que hagan uso de este atributo.
+
+Otra opción hubiera sido almacenar los años como si fueran nodos y crear una relación entre ellos y las publicaciones. Estos nodos tendrían una gran cantidad de relaciones con nodos de publicaciones asociadas. Para evitar esto, hemos optado por hacer uso de los índices y considerar este año como un atributo de la publicación.
+
+\subsection{Carga de los datos.}
+
+La carga de datos se ha hecho a partir del mismo fichero \gls{XML} que contabamos al inicio del capítulo anterior. En este caso, el formato intermedio usado antes de realizar la carga ha sido \gls{CSV}. 
+
+Antes de explicar como se ha realizado esta carga, quisieramos comentar que uno de los problemas con el que nos hemos encontrados, y que más dolores de cabeza nos ha dado ha sido precisamente la carga de los datos. Las herramientas con las que cuenta Neo4J para realizar esta carga tienen ciertas limitaciones que pueden ser un problema, a saber:
+
+\begin{itemize}
+ \item La carga de dato mediante Cypher utilizando el comando \gls{LOAD CSV} es extremadamente lento cuando tratamos como varios millones de items, como es nuestro caso.
+ \item La herramienas por línea de comandos \textit{neo4j-admin}, con su opción \gls{import}, nos obliga a borrar, si existe, el grafo donde queramos guardar los datos. Además, es susceptible a errores, y en caso de no poder procesar algun dato, detiene por completo el proceso.
+\end{itemize}
+
+Así pués, para realizar la carga de nuestros datos, realizamos los siguientes pasos:
+
+\begin{enumerate}
+ \item Procesamos el fichero \gls{XML} para obtener los datos en formato \gls{CSV}. Para ello ejecutamos el script \textit{xml_to_neo4j.py}. Este script realiza las siguientes acciones:
+ \begin{enumerate}
+  \item Lee el fichero \gls{XML} original y crea a partir de él, un fichero temporal con los caracteres conflictivos escapados y correctamente codificados.
+  \item A partir de este fichero temporal, genera una tres \gls{datasets} dferentes, compuesto cada uno de ellos por multiples ficheros \gls{CSV}, a saber:
+  \begin{itemize}
+   \item El primero, \textit{publications}, con la información sobre las publicaciones.
+   \item Otro, \textit{authors}, con la información sobre los autores.
+   \item Y el último, \textit{rel}, con las relaciones entre autores y publicaciones.
+  \end{itemize}
+ \end{enumerate}
+ \item Desde línea de comandos, eliminamos el grafo.
+ \item Creamos los ficheros con las cabeceras de nuestros \gls{CSVs}. Estos no son más que ficheros en este mismo formato con una sola línea en la que se especifica la cabecera de nuestros datasets en un formato adecuado.
+ \item Ejecutamos el siguiente comando y esperamos que acabe el proceso.
+\end{enumerate}
 
 
-\subsubsection{Referencias}
-
-Para referenciar a una palabra del glosario
-
-\glsfirst{JDK} \\
-\gls{APK} \\
-\gls{JDK} \\
-\cite{AngBenNadel}
-
-\subsubsection{Imagen}
-
-\begin{figure}[H]
-\centering
-  \includegraphics[width=\textwidth]{Figures/ch1/introduction/os_quota}
-  \caption{Pie de imagen. }
-\end{figure}
-
-\subsubsection{Código}
-
-Bash
 
 
-\begin{minted}[
-frame=lines,
-linenos
-]{bash}
-    cd
-    ls
-    echo "Hello World"
-\end{minted}
-
-Python
-
-
-\begin{minted}[
-frame=lines,
-linenos
-]{python}
-import os
-class HelloWorld:
-    msg = "Hello World"
-    def __init__(self):
-        print(self.msg)
-
-if __name__ == '__main__':
-    HelloWorld()	
-\end{minted}

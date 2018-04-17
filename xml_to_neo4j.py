@@ -2,7 +2,7 @@ from tempfile import NamedTemporaryFile
 import html
 
 from pyspark.sql.types import StringType, StructType, StructField, ArrayType
-from pyspark.sql.functions import concat_ws, lit, translate
+from pyspark.sql.functions import explode, concat_ws, lit, translate
 
 
 schema = StructType([
