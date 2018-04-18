@@ -1,6 +1,6 @@
 \subsection{Diseño}
 
-Como ya nos ocurría con MongoDB, aunque usa de las características de Neo4J es qeu se trata de una \gls{BBDD} \textit{schemaless}, es necesario diseñar la estructura con la que se guardarán los datos. 
+Como ya nos ocurría con MongoDB, aunque usa de las características de Neo4J es que se trata de una \gls{BBDD} \textit{schemaless}, es necesario diseñar la estructura con la que se guardarán los datos. 
 
 Como comentabamos en el apartado anterior, en Neo4J podemos definir \textit{nodos} y \textit{relaciones} entre estos nodos, caracterizar a estos mediante atributos y definir subgrados utilizando \textit{:LABELS o :TYPES}. 
 
@@ -25,17 +25,17 @@ La carga de datos se ha hecho a partir del mismo fichero \gls{XML} que contabamo
 Antes de explicar como se ha realizado esta carga, quisieramos comentar que uno de los problemas con el que nos hemos encontrados, y que más dolores de cabeza nos ha dado ha sido precisamente la carga de los datos. Las herramientas con las que cuenta Neo4J para realizar esta carga tienen ciertas limitaciones que pueden ser un problema, a saber:
 
 \begin{itemize}
- \item La carga de dato mediante Cypher utilizando el comando \textit{LOAD CSV} es extremadamente lento cuando tratamos como varios millones de items, como es nuestro caso.
+ \item La carga de dato mediante Cypher utilizando el comando \textit{LOAD CSV} es extremadamente lento cuando tratamos varios millones de items, como es nuestro caso.
  \item La herramienas por línea de comandos \textit{neo4j-admin}, con su opción \textit{import}, nos obliga a borrar, si existe, el grafo donde queramos guardar los datos. Además, es susceptible a errores, y en caso de no poder procesar algun dato, detiene por completo el proceso.
 \end{itemize}
 
 Así pués, para realizar la carga de nuestros datos, realizamos los siguientes pasos:
 
 \begin{enumerate}
- \item Procesamos el fichero \gls{XML} para obtener los datos en formato \gls{CSV}. Para ello ejecutamos el script \textit{xml\_to\_neo4j.py}. Este script realiza las siguientes acciones:
+ \item Procesamos el fichero \gls{XML} para obtener los datos en formato \gls{CSV}. Para ello ejecutamos el script \textit{parser.py}. Este script realiza las siguientes acciones:
  \begin{enumerate}
   \item Lee el fichero \gls{XML} original y crea a partir de él, un fichero temporal con los caracteres conflictivos escapados y correctamente codificados.
-  \item A partir de este fichero temporal, genera una tres \textbf{datasets} dferentes, compuesto cada uno de ellos por multiples ficheros \gls{CSV}, a saber:
+  \item A partir de este fichero temporal, genera tres \textbf{datasets} dferentes, compuesto cada uno de ellos por multiples ficheros \gls{CSV}:
   \begin{itemize}
    \item El primero, \textit{publications}, con la información sobre las publicaciones.
    \item Otro, \textit{authors}, con la información sobre los autores.
