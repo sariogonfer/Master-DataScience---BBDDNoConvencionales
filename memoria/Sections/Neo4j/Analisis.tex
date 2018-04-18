@@ -4,7 +4,7 @@ Para este análisis vamos a realizar alguna de las consultas que ya hicimos en M
 
 \subsection{Listado de todas las publicaciones de un autor determinado.}
 
-En primer lugar, vamos a hacer una busqueda de las publicaciones realizadas por un autor en concreto. Para esta busqueda, haremos un filtrado de los nodos que pertenezcan al subgrafo de autores, \textit{:Author}, y sobre estos filtraremos utilizando el atributo \gls{name} de estos nodos. Con esto tendremos el nodo del autor. A partir de este nodo, y siguiendo las relaciones de tipo \textit{:Writed} que tiene definidas como si de un camino se tratase, llegaremos a las publicaciones de este autor.
+En primer lugar, vamos a hacer una busqueda de las publicaciones realizadas por un autor en concreto. Para esta busqueda, haremos un filtrado de los nodos que pertenezcan al subgrafo de autores, \textit{:Author}, y sobre estos filtraremos utilizando el atributo \textit{name} de estos nodos. Con esto tendremos el nodo del autor. A partir de este nodo, y siguiendo las relaciones de tipo \textit{:Writed} que tiene definidas como si de un camino se tratase, llegaremos a las publicaciones de este autor.
 
 \begin{minted}[
 frame=single]{sql}
@@ -65,3 +65,16 @@ ORDER BY age DESC LIMIT 5
 \end{minted}
 
 Aunque la consulata a priori parece secilla, incluso más que la que usamos en MongoDB, el tiempo de ejecución y la carga que le supone a la máquina es signifcativamente mayor, llegando ingluso a desbordar la memoria.
+
+\section{Diferencias con MongoDB.}
+
+MongoDB y Neo4j son dos \gls{BBDD} difertentes en su concepción. Mientras que MongoDB está orientada a documentos, Neo4j está orientada a grafos.
+
+Durante la realización de esta práctica hemos podido sacar algunas conclusiones respecto al uso de ambas \gls{BBDD}:
+
+\begin{itemize}
+ \item La carga de los datos en Neo4j ha sido de largo, más complicada que en MongoDB. Esto se debe a las herramientas disponibles para realizar esta carga de datos, al menos, la primera carga, donde el uso de \textit{LOAD CSV} era inviable por el tiempo de carga. En el caso de hacer uso de \textit{neo4j-admin}, es necesario eliminar el grafo en caso de existir, además de ser sensible a errores (en versiones anteriores existía una opción que permitia definir un número máximo de errores permitidos y así poder tratarlos de manera individual a posteriori).
+ \item La sintaxis que ofrece \textit{Cypher} resulta más sencilla, en especial a aquellas personas que venga del mundo \gls{SQL}.
+ \item Neo4j demuestra su fortaleza a la hora de realizar consultas sobre relaciones entre nodos, pero palidece en aquellas consulta en las que hay que realizar operaciones con los atributos de estos. El uso de índices resulta útil en aquellos atributos que puedan tomar un gran número de posibles valores.
+ \item MongoDB dispone de un framework para hacer agragaciones muy potente, aunque su curva de aprendizaje es muy empinada al principio.
+\end{itemize}

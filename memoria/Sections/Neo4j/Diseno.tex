@@ -35,7 +35,7 @@ Así pués, para realizar la carga de nuestros datos, realizamos los siguientes 
  \item Procesamos el fichero \gls{XML} para obtener los datos en formato \gls{CSV}. Para ello ejecutamos el script \textit{xml\_to\_neo4j.py}. Este script realiza las siguientes acciones:
  \begin{enumerate}
   \item Lee el fichero \gls{XML} original y crea a partir de él, un fichero temporal con los caracteres conflictivos escapados y correctamente codificados.
-  \item A partir de este fichero temporal, genera una tres \gls{datasets} dferentes, compuesto cada uno de ellos por multiples ficheros \gls{CSV}, a saber:
+  \item A partir de este fichero temporal, genera una tres \textbf{datasets} dferentes, compuesto cada uno de ellos por multiples ficheros \gls{CSV}, a saber:
   \begin{itemize}
    \item El primero, \textit{publications}, con la información sobre las publicaciones.
    \item Otro, \textit{authors}, con la información sobre los autores.
@@ -43,7 +43,7 @@ Así pués, para realizar la carga de nuestros datos, realizamos los siguientes 
   \end{itemize}
  \end{enumerate}
  \item Desde línea de comandos, eliminamos el grafo.
- \item Creamos los ficheros con las cabeceras de nuestros \gls{CSVs}. Estos no son más que ficheros en este mismo formato con una sola línea en la que se especifica la cabecera de nuestros datasets en un formato adecuado.
+ \item Creamos los ficheros con las cabeceras de nuestros \glspl{CSV}. Estos no son más que ficheros en este mismo formato con una sola línea en la que se especifica la cabecera de nuestros datasets en un formato adecuado.
  \item Ejecutamos el siguiente comando y esperamos que acabe el proceso.
 \end{enumerate}
 
