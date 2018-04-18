@@ -45,8 +45,27 @@ Así pués, para realizar la carga de nuestros datos, realizamos los siguientes 
  \item Desde línea de comandos, eliminamos el grafo.
  \item Creamos los ficheros con las cabeceras de nuestros \glspl{CSV}. Estos no son más que ficheros en este mismo formato con una sola línea en la que se especifica la cabecera de nuestros datasets en un formato adecuado.
  \item Ejecutamos el siguiente comando y esperamos que acabe el proceso.
+   \begin{minted}[
+    frame=single, breaklines]{bash}
+    neo4j-admin import -nodes:Publication "publications.header.csv,publications/part.*" -nodes:Author "authors.header.csv,authors/part.*" -relationships:Writed "rels.header.csv,rels/part.*" --ignore-duplicate-nodes=true
+   \end{minted}
 \end{enumerate}
 
+Una vez concluida la carga, deberiamos se capaces de acceder a la interfaz web que nos ofrece el propio servidor Neo4j desde cualquier navegador (si lo estamos ejecutando en local, por lo general deberá ser accesible \url{http://localhost:7474/browser/}) y ver una interfaz muy amigable, en la que poder ejecutar diferentes consultas y ver los datos de manera gráfica.
 
+\begin{figure}[H]
+  \centering
+    \centering
+        \includegraphics[width=0.8\textwidth]{Figures/neo4j}
+  \caption{Interfaz web que nos proporciona Neo4j. Una interfaz sencilla desde la cual poder realizar consultas y ver los datos de manera gráfica.}
+\end{figure}
+
+Ya solo nos quedaría crear los índices que habiamos comentados. Las consultas necesarias para crearlos pueden ser ejecutadas desde la misma intefaz web:
+
+\begin{minted}[
+frame=single, breaklines]{sql}
+  CREATE INDEX ON :Author(name)
+  CREATE INDEX ON :Publication(year)
+\end{minted}
 
 

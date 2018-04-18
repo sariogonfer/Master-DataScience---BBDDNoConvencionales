@@ -12,6 +12,65 @@ MATCH (:Author {name: 'Chin-Wang Tao'})-[:Writed]->(p:Publication)
 RETURN p.title
 \end{minted}
 
+Las publicaciones pertenecientes a este autor son 71, de las cuales podemos ver a continuación una muestra en formato \gls{JSON}:
+
+
+\begin{minted}[
+frame=single]{js}
+[
+  {
+    "keys": [
+      "p.title"
+    ],
+    "length": 1,
+    "_fields": [
+      "Iris recognition using Gabor filters optimized by the particle swarm algorithm."
+    ],
+    "_fieldLookup": {
+      "p.title": 0
+    }
+  },
+  {
+    "keys": [
+      "p.title"
+    ],
+    "length": 1,
+    "_fields": [
+      "Texture classification using a fuzzy texture spectrum and neural networks."
+    ],
+    "_fieldLookup": {
+      "p.title": 0
+    }
+  },
+  {
+    "keys": [
+      "p.title"
+    ],
+    "length": 1,
+    "_fields": [
+      "Errata: Iris recognition using Gabor filters optimized by the particle swarm algorithm."
+    ],
+    "_fieldLookup": {
+      "p.title": 0
+    }
+  },
+  ...
+  {
+    "keys": [
+      "p.title"
+    ],
+    "length": 1,
+    "_fields": [
+      "iPhone as Multi-CAM and Multi-viewer."
+    ],
+    "_fieldLookup": {
+      "p.title": 0
+    }
+  }
+]
+\end{minted}
+
+
 Podemos comparar el efecto de aplicar un índice sobre este campo:
 
 \begin{itemize}
@@ -28,6 +87,29 @@ Para este caso necesitaremos hacer una agregación. En el caso de Cypher, no con
 frame=single]{sql}
 MATCH (p:Article {year: 2017})
 RETURN count(p)
+\end{minted}
+
+Y tenemos que el número total de articulos publicados en 2017 es de 136943:
+
+\begin{minted}[
+frame=single]{json}
+[
+  {
+    "keys": [
+      "count(p)"
+    ],
+    "length": 1,
+    "_fields": [
+      {
+        "low": 136943,
+        "high": 0
+      }
+    ],
+    "_fieldLookup": {
+      "count(p)": 0
+    }
+  }
+]
 \end{minted}
 
 Como en el caso anterior, comparamos los tiempos de carga con y sin índice:
@@ -49,7 +131,53 @@ MATCH (:Author {name: "Chin-Wang Tao"})-[:Writed]->(:Publication)<-[:Writed]-(c:
 RETURN c.name
 \end{minted}
 
-En este caso, la ejecución en Neo4j tardó 7 ms, mientras que en MongoDB, el tiempo de ejecución de la consulta similar fue de 5 ms. Se puede entender que el tiempo sea prácticamente idéntico, puesto que este caso de uso auna en una misma consulta relaciones y atributos de las entidades; por lo que el tiempo de ejecucion en MongoDB será muy bueno gracias a la buena gestión de atributos de documentos, mientras que Neo4J toma ventaja de las relaciones entre entidades.
+La lista de coautores es la siguiente (solo se muestran algunos de los 150 coautores devueltos):
+
+\begin{minted}[
+frame=single]{json}
+[
+  {
+    "keys": [
+      "c.name"
+    ],
+    "length": 1,
+    "_fields": [
+      "Jin-Shiuh Taur"
+    ],
+    "_fieldLookup": {
+      "c.name": 0
+    }
+  },
+  {
+    "keys": [
+      "c.name"
+    ],
+    "length": 1,
+    "_fields": [
+      "Chung-Chih Tsai"
+    ],
+    "_fieldLookup": {
+      "c.name": 0
+    }
+  },
+  ...
+  {
+    "keys": [
+      "c.name"
+    ],
+    "length": 1,
+    "_fields": [
+      "Chen-Chia Chuang"
+    ],
+    "_fieldLookup": {
+      "c.name": 0
+    }
+  }
+]
+\end{minted}
+
+
+En este caso, la ejecución en Neo4j tardó 7 ms, mientras que en MongoDB, el tiempo de ejecución de la consulta similar fue de 5 ms. Se puede entender que el tiempo sea prácticamente idéntico, puesto que este caso de uso auna en una misma consulta relaciones y atributos de las entidades; por lo que el tiempo de ejecucion en MongoDB será muy bueno gracias a la buena gestión de atributos de documentos, mientras que Neo4J toma ventaja de las relaciones entre entidades, y en ambos casos, el uso de índices.
 
 \subsection{Edad de los 5 autores con el periodo de publicaciones más largo.}
 
@@ -63,18 +191,4 @@ RETURN a.name, age
 ORDER BY age DESC LIMIT 5
 \end{minted}
 
-Aunque la consulta a priori parece secilla, incluso más que la que usamos en MongoDB, el tiempo de ejecución y la carga que le supone a la máquina es significativamente mayor, llegando ingluso a desbordar la memoria.
-
-\section{Diferencias con MongoDB.}
-
-MongoDB y Neo4j son dos \gls{BBDD} diferentes en su concepción. Mientras que MongoDB está orientada a documentos, Neo4j está orientada a grafos.
-
-Durante la realización de esta práctica hemos podido sacar algunas conclusiones respecto al uso de ambas \gls{BBDD}:
-
-\begin{itemize}
- \item La carga de los datos en Neo4j ha sido de largo, más complicada que en MongoDB. Esto se debe a las herramientas disponibles para realizar esta carga de datos, al menos, la primera carga, donde el uso de \textit{LOAD CSV} era inviable por el tiempo de carga. En el caso de hacer uso de \textit{neo4j-admin}, es necesario eliminar el grafo en caso de existir, además de ser sensible a errores (en versiones anteriores existía una opción que permitia definir un número máximo de errores permitidos y así poder tratarlos de manera individual a posteriori).
- \item La sintaxis que ofrece \textit{Cypher} resulta más sencilla, en especial a aquellas personas que venga del mundo \gls{SQL}.
- \item Neo4j demuestra su fortaleza a la hora de realizar consultas sobre relaciones entre nodos, pero palidece en aquellas consulta en las que hay que realizar operaciones con los atributos de estos. El uso de índices resulta útil en aquellos atributos que puedan tomar un gran número de posibles valores.
- \item MongoDB dispone de un framework para hacer agregaciones muy potente, aunque su curva de aprendizaje es muy empinada al principio.
- \item En la actualidad, MongoDB está presentando actualizaciones constantemente, ampliando a través de nuevas funcionalidades que los usuarios que venían del mundo SQL parecían echar de menos. Esto está consiguiendo que la expansión de utilización de MongoDB sea a un ritmo frenético.
-\end{itemize}
+Aunque la consulta a priori parece secilla, incluso más que la que usamos en MongoDB, el tiempo de ejecución y la carga que le supone a la máquina es significativamente mayor, llegando incluso a desbordar en memoria.
