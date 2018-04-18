@@ -1,0 +1,323 @@
+##########################################################################################################################
+#Las siguientes consultas sobre MongoDB y Neo4j se encuentran incluidas en la memoria, así como una explicación
+#detallada en cada caso. Puede existir algún error tipográfico en la transcripción de la memoria al fichero de texto.
+##########################################################################################################################
+#Para preparar las collecciones y limpiar datos, ejecutamos el siguiente código:
+
+db.articles.aggregate([{$addFields: {author: '$author._VALUE'}}, {$out: "articles"}])
+db.incollections.aggregate([{$addFields: {author: '$author._VALUE'}}, {$out: "incollections"}])
+
+db.inproceedings.aggregate([{$addFields: {author: '$author._VALUE'}}, {$out: "inproceedings"}])
+
+
+db.articles.find().forEach(function(obj){
+    db.articles.update(
+        {"_id": obj._id, 'year': {$exists : true}},
+        {$set: {"year": NumberInt(obj.year)}})
+    })
+
+
+db.incollections.find().forEach(function(obj){
+    db.incollections.update(
+        {"_id": obj._id, 'year': {$exists : true}},
+        {$set: {"year": NumberInt(obj.year)}})
+    })
+
+db.inproceedings.find().forEach(function(obj){
+    db.inproceedings.update(
+        {"_id": obj._id, 'year': {$exists : true}},
+        {$set: {"year": NumberInt(obj.year)}})
+    })
+
+db.incollections.aggregate([
+    {$unwind: "$author"},
+    {$group:
+        { _id: "$author",
+        incollections: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}],
+    { allowDiskUse: true })
+    .forEach(
+        function(obj){
+            db.authors.update(
+            {_id: obj._id},
+            {$set: {"incollections": obj.incollections}},
+            {upsert: true})})
+
+
+db.articles.aggregate([
+    {$unwind: "$author"},
+    {$group:
+        { _id: "$author",
+        articles: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}],
+    { allowDiskUse: true })
+    .forEach(
+        function(obj){
+            db.authors.update(
+            {_id: obj._id},
+            {$set: {"articles": obj.articles}},
+            {upsert: true})})
+
+
+db.inproceedings.aggregate([
+    {$unwind: "$author"},
+    {$group:
+        {_id: "$author",
+        inproceedings: {$push: {_id: "$_id", title: "$title", year: "$year"}}}}],
+    { allowDiskUse: true })
+    .forEach(function(obj){
+            db.authors.update(
+            {_id: obj._id},
+            {$set: {"inproceedings": obj.inproceedings}},
+            {upsert: true})})
+
+
+##########################################################################################################################
+# Listado de todas las publicaciones de un autor determinado.
+
+db.authors.aggregate([
+    { $match : { _id : "Chin-Wang Tao" } },
+    { $project: {publication: {$concatArrays:
+    ["$incollections.title", "$articles.title", "$inproceedings.title"]}}
+    }
+] )
+
+##########################################################################################################################
+# Número de publicaciones de un autor determinado
+
+db.authors.aggregate([
+    { $match : { _id : "Chin-Wang Tao" } },
+    { $project: {publications: {$concatArrays:
+        ["$incollections.title", "$articles.title", "$inproceedings.title"]}}
+    },
+    {$project: {number_of_publications: {$size: "$publications"}}}
+] )
+
+##########################################################################################################################
+# Número de artículos en revistas para el año 2017
+
+db.articles.find({year: 2017}).count()
+
+
+#Creación del índice
+db.articles.createIndex({year:1})
+
+##########################################################################################################################
+# Número de autores ocasionales (menos de 5 publicaciones).
+
+db.authors.find({$expr: {$lt: [{$concatArrays: ["$incollections", "$articles",
+    "$inproceedings"]}, 5]}}).count()
+##########################################################################################################################
+# Número de artículos y de artículos en congresos de los diez autores con más publicaciones en total.
+
+db.authors.aggregate(
+[
+    {$project: {
+        "total_incollections": {$size: {$ifNull: ['$incollections', []]},},
+        "total_inproceedings": {$size: {$ifNull: ['$inproceedings', []]},},
+        "total_articles": {$size: {$ifNull: ['$articles', []]},}
+    }},
+    {$addFields: {
+        "total_publications": { $add: [ "$total_incollections", "$total_inproceedings", "$total_articles" ] }
+    }},
+    {$sort: { total_publications:-1 } },
+    {$limit: 10},
+    {$project: {
+        "total_articles":1,
+        "total_inproceedings":1
+    }}
+    ],
+    { allowDiskUse : true }
+)
+
+##########################################################################################################################
+# Número medio de autores por publicación
+
+(db.articles.aggregate([
+    {$match: {author : {$exists: true}}},
+    {$project: {num_authors: { $size: '$author' }}},
+    {$group: {_id: '', num_authors: {$sum: '$num_authors'}}},
+    {$project: {_id: 0, 'num_authors': '$num_authors'}}])
+    .next()['num_authors'] +
+db.incollections.aggregate([
+    {$match: {author : {$exists: true}}},
+    {$project: {num_authors: { $size: '$author' }}},
+    {$group: {_id: '', num_authors: {$sum: '$num_authors'}}},
+    {$project: {_id: 0, 'num_authors': '$num_authors'}}])
+    .next()['num_authors'] +
+db.inproceedings.aggregate([
+    {$match: {author : {$exists: true}}},
+    {$project: {num_authors: { $size: '$author' }}},
+    {$group: {_id: '', num_authors: {$sum: '$num_authors'}}},
+    {$project: {_id: 0, 'num_authors': '$num_authors'}}])
+    .next()['num_authors'])/
+(db.articles.find().count() +
+    db.incollections.find().count() +
+    db.inproceedings.find().count())
+
+
+##########################################################################################################################
+# Lista de coautores de un autor.
+
+db.authors.aggregate([
+    { $match : { _id : "Chin-Wang Tao" } },
+    {$lookup:
+        {
+            from: "articles",
+            localField: "articles._id",
+            foreignField: "_id",
+            as: "articles_detail"
+        }
+    },
+    {$lookup:
+        {
+            from: "incollections",
+            localField: "incollections._id",
+            foreignField: "_id",
+            as: "incollections_detail"
+        }
+    },
+    {$lookup:
+        {
+            from: "inproceedings",
+            localField: "inproceedings._id",
+            foreignField: "_id",
+            as: "inproceedings_detail"
+        }
+    },
+    {$project:{
+        _id : 1,
+        authors_detail : { $concatArrays: [ "$articles_detail", "$incollections_detail", "$inproceedings_detail" ] }
+        }
+    },
+    {$project: {
+        "_id": 0,
+        "results": {
+        $reduce: {
+            input: "$authors_detail.author",
+            initialValue: [],
+            in: { $concatArrays : ["$$value", "$$this"] }
+        }
+    }
+    }
+    },
+    { $unwind: "$results" },
+    {$group:
+        {
+            _id: "$results"
+        }
+    },
+    {$group:
+        {
+            _id: null,
+            coauthors: { $push: { _id: "$_id"} }
+        }
+    },
+    {$project:
+        {
+            _id:0,
+            "coauthors": "$coauthors._id"
+        }
+    }
+    ])
+
+
+##########################################################################################################################
+# Número de autores novatos.
+
+
+db.authors.aggregate(
+[
+    {$project: {
+        publication: {$concatArrays: [
+            {$ifNull: ['$incollections', []]},
+            {$ifNull: ['$inproceedings', []]},
+            {$ifNull: ['$articles', []]}]}
+    }},
+    {$addFields: {
+        max_publication: { $max: "$publication.year"},
+        min_publication: { $min: "$publication.year"}
+    }},
+    {$addFields: {
+        "age": { $subtract: [ "$max_publication", "$min_publication"] }
+        }},
+        {'$match':{'age': {'$lt': 5}}}
+    ],
+    { allowDiskUse: true }
+    ).itcount()
+
+
+##########################################################################################################################
+# Porcentaje de publicaciones en revistas con respecto al total de publicaciones.
+
+db.articles.find().count()*100/(
+    db.articles.find().count() +
+    db.incollections.find().count() +
+    db.inproceedings.find().count())
+
+
+##########################################################################################################################
+
+# Creación de vistas
+
+db.createView (
+	"publications_extended",
+	"authors",
+	[
+	{ $lookup: {
+		from: "articles", localField: "articles._id",
+		foreignField: "_id", as: "articles_extended" } },
+	{ $lookup: {
+		from: "incollections", localField: "incollections._id",
+		foreignField: "_id", as: "incollections_extended" } },
+	{ $lookup: {
+		from: "inproceedings", localField: "inproceedings._id",
+		foreignField: "_id", as: "inproceedings_extended" } },
+	{ $project: {
+		articles_extended: 1, incollections_extended: 1,
+		inproceedings_extended: 1}}
+	]
+)
+
+
+# Consulta sobre la vista:
+
+db.publications_extended.aggregate([
+	{ $match : { _id : "Chin-Wang Tao" } },
+	{ $project: {publication: {$concatArrays:
+		["$articles_extended.title", "$incollections_extended.title", "$inproceedings_extended.title"]}}
+	}
+])
+
+##########################################################################################################################
+
+# Creación de índices
+
+CREATE INDEX ON :Author(name)
+CREATE INDEX ON :Publication(year)
+
+
+##########################################################################################################################
+#  Listado de todas las publicaciones de un autor determinado
+
+MATCH (:Author {name: 'Chin-Wang Tao'})-[:Writed]->(p:Publication)
+RETURN p.title
+
+##########################################################################################################################
+# Número de artículos en revistas para el año 2017.
+
+MATCH (p:Article {year: 2017})
+RETURN count(p)
+##########################################################################################################################
+# Lista de coautores de un autor
+
+MATCH (:Author {name: "Chin-Wang Tao"})-[:Writed]->(:Publication)<-[:Writed]-(c:Author)
+RETURN c.name
+##########################################################################################################################
+# Edad de los 5 autores con el periodo de publicaciones más largo
+
+MATCH (a:Author)-[:Writed]->(p:Publication)
+WITH a, max(p.year) - min(p.year) as age
+RETURN a.name, age
+ORDER BY age DESC LIMIT 5
+
+##########################################################################################################################
+
