@@ -18,55 +18,67 @@ La siguiente tabla muestra los datos de las colleciones con las que vamos a trab
 \begin{center}
   \begin{tabular}{ | l | l | l |}
     \hline
-    Colección & Información  &  Indices \\ \hline
+    Colección & Información  &  Índices \\ \hline
     
     Articles &
-    \begin{minipage}[t]{0.4\textwidth}
+    \begin{minipage}[t]{0.6\textwidth}
       \begin{itemize}
 	\item \_id
 	\item authors: Array con los nombres de los autores.
+	\item year: Año de publicación
+	\item \ldots
       \end{itemize}
     \end{minipage} & 
-    \begin{minipage}[t]{0.3\textwidth}
+    \begin{minipage}[t]{0.1\textwidth}
       \begin{itemize}
 	\item \_id
+	\item year
       \end{itemize} 
     \end{minipage}  \\ \hline
     
     Incollections &
-    \begin{minipage}[t]{0.4\textwidth}
+    \begin{minipage}[t]{0.6\textwidth}
       \begin{itemize}
 	\item \_id
 	\item authors: Array con los nombres de los autores.
+	\item year: Año de publicación
+	\item \ldots
       \end{itemize}
     \end{minipage} & 
-    \begin{minipage}[t]{0.3\textwidth}
+    \begin{minipage}[t]{0.1\textwidth}
       \begin{itemize}
 	\item \_id
+	\item year
       \end{itemize}
     \end{minipage}  \\ \hline
     
     Inproceedings &
-    \begin{minipage}[t]{0.4\textwidth}
+    \begin{minipage}[t]{0.6\textwidth}
       \begin{itemize}
 	\item \_id
 	\item authors: Array con los nombres de los autores.
+	\item year: Año de publicación
+	\item \ldots
       \end{itemize}
     \end{minipage} & 
-    \begin{minipage}[t]{0.3\textwidth}
+    \begin{minipage}[t]{0.1\textwidth}
       \begin{itemize}
 	\item \_id
+	\item year
       \end{itemize} 
     \end{minipage}  \\ \hline
     
     Authors &
-    \begin{minipage}[t]{0.4\textwidth}
+    \begin{minipage}[t]{0.6\textwidth}
       \begin{itemize}
-	\item \_id
+	\item \_id: Que corresponde con el nombre del autor.
 	\item authors: Array con los nombres de los autores.
+	\item articles: Array con la información mínima sobre los articulos publicados por este autor y su ID en la colección correspondiente.
+	\item incollections: Array con la información mínima sobre los artículos en congresos realizados por este autor y su ID en la colección correspondiente.
+	\item inproceedings: Array con la información mínima sobre las actas de congresos de este autor y su ID en la colección correspondiente.
       \end{itemize}
     \end{minipage} & 
-    \begin{minipage}[t]{0.3\textwidth}
+    \begin{minipage}[t]{0.1\textwidth}
       \begin{itemize}
 	\item \_id
       \end{itemize} 
